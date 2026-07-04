@@ -411,7 +411,7 @@
 
 <script>
 // ============ CONFIG ============
-const API_URL = "https://script.google.com/macros/s/AKfycbxku0GzNnfHRKIUmFf9zwAWosUiPAaNaFFGwKFlpEVKB6c4fCt0_KRkxZQ6Lp5hQelsoA/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbzvUnvTz3p5uZWKrx55XDlH-UWq_SUK4aaTVKCSwekVNYYOeEDywhnchDLhpFg2Azqw0A/exec";
 const LOGIN_USER = "admin";
 const LOGIN_PASS = "admin123";
 
@@ -470,9 +470,11 @@ async function apiCall(action, payload={}){
       body: JSON.stringify({ action, payload })
     });
     const json = await res.json();
+    console.log('[apiCall]', action, payload, '->', json);
     if(json.status !== 'ok') throw new Error(json.message || 'Unknown error');
     return json.data;
   } catch(err){
+    console.error('[apiCall ERROR]', action, payload, err);
     showToast('Error: ' + err.message, true);
     throw err;
   }
@@ -600,24 +602,44 @@ document.addEventListener('click', e => {
 
 async function submitTransaction(e){
   e.preventDefault();
-  const kode = document.getElementById('txKode').value;
-  if(!kode){ showToast('Pilih barang dari daftar suggestion dulu, bro', true); return; }
+  let kode = document.getElementById('txKode').value;
+  const namaInput = document.getElementById('txNama').value.trim();
+
+  // Kalau kode belum keisi (user nggak klik dropdown suggestion), coba auto-match exact
+  if(!kode){
+    const exactMatches = partMasterCache.filter(i => i.namaBarang.toLowerCase() === namaInput.toLowerCase());
+    if(exactMatches.length === 1){
+      kode = exactMatches[0].kodeBarang;
+      document.getElementById('txKode').value = kode;
+    } else {
+      alert('Nama barang "' + namaInput + '" belum cocok dengan Master Barang.\n\nKetik ulang nama barang dan KLIK salah satu saran yang muncul di bawah kolom, biar Kode Barang otomatis keisi.');
+      return;
+    }
+  }
+
+  const qty = Number(document.getElementById('txQty').value);
+  const kodeMutasi = document.getElementById('txMutasi').value;
+  if(!qty || qty <= 0){ alert('Qty harus diisi dan lebih dari 0'); return; }
+  if(!kodeMutasi){ alert('Jenis Mutasi belum dipilih'); return; }
+
   const payload = {
     tanggal: document.getElementById('txTanggal').value || null,
     noTiket: document.getElementById('txTiket').value,
     namaPeminjam: document.getElementById('txPeminjam').value,
     kodeBarang: kode,
-    namaBarang: document.getElementById('txNama').value,
-    qty: Number(document.getElementById('txQty').value),
-    kodeMutasi: Number(document.getElementById('txMutasi').value),
+    namaBarang: namaInput,
+    qty: qty,
+    kodeMutasi: Number(kodeMutasi),
     keterangan: document.getElementById('txKeterangan').value
   };
   try{
     await apiCall('addTransaction', payload);
-    showToast('Transaksi tersimpan');
+    showToast('Transaksi tersimpan: ' + kode);
     e.target.reset();
     await Promise.all([loadStock(), loadHistory(), loadDashboard()]);
-  } catch(err){}
+  } catch(err){
+    alert('Gagal simpan transaksi: ' + err.message);
+  }
 }
 
 async function loadHistory(){
