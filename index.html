@@ -411,6 +411,11 @@
 
     <script>
         // ============================================
+        // API CONFIGURATION - GANTI DENGAN URL WEB APP ANDA
+        // ============================================
+        const API_BASE = 'https://script.google.com/macros/s/AKfycbzpn0djpgGur3SSRi--8B6SvabFtVlDHd-8G5ruWRZ5fVVtiS0duhbnwjwpnCLFgDOhAg/exec'; // <-- GANTI
+
+        // ============================================
         // APP STATE
         // ============================================
         let appState = {
@@ -422,22 +427,29 @@
             itemData: {},
             isEditMode: false,
             editingRowIndices: [],
-            opnameData: []          // FIX: simpan data opname di state
+            opnameData: []
         };
 
         // ============================================
-        // SERVER CALL
+        // SERVER CALL via REST API
         // ============================================
-        function callServer(functionName, ...args) {
-            return new Promise((resolve, reject) => {
-                if (typeof google !== 'undefined' && google.script && google.script.run) {
-                    google.script.run
-                        .withSuccessHandler(resolve)
-                        .withFailureHandler(reject)
-                        [functionName](...args);
-                } else {
-                    reject('Not connected to Apps Script');
-                }
+        function callApi(action, ...args) {
+            return fetch(API_BASE, {
+                method: 'POST',
+                mode: 'cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: action, args: args })
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Network error');
+                return response.json();
+            })
+            .then(data => {
+                return data;
+            })
+            .catch(error => {
+                console.error('API call error:', error);
+                throw error;
             });
         }
 
@@ -449,7 +461,7 @@
             const password = document.getElementById('loginPassword').value;
             showLoading();
             try {
-                const result = await callServer('login', username, password);
+                const result = await callApi('login', username, password);
                 hideLoading();
                 if (result.success) {
                     document.getElementById('loginPage').style.display = 'none';
@@ -461,7 +473,7 @@
                 }
             } catch (error) {
                 hideLoading();
-                document.getElementById('loginError').textContent = 'Koneksi error. Pastikan deploy di Apps Script.';
+                document.getElementById('loginError').textContent = 'Koneksi error. Pastikan URL API benar.';
             }
         }
 
@@ -504,7 +516,7 @@
         async function loadDashboard() {
             showLoading();
             try {
-                const data = await callServer('getDashboardData');
+                const data = await callApi('getDashboardData');
                 hideLoading();
                 document.getElementById('stat-totalItems').textContent = data.totalItems || 0;
                 document.getElementById('stat-totalStock').textContent = data.totalStock || 0;
@@ -550,7 +562,7 @@
         async function loadDataEntry() {
             showLoading();
             try {
-                const list = await callServer('getNamaBarangList');
+                const list = await callApi('getNamaBarangList');
                 hideLoading();
                 appState.namaBarangList = list;
                 resetToNewEntry();
@@ -565,7 +577,7 @@
             if (!ticket) { showToast('Masukkan nomor tiket!', 'warning'); return; }
             showLoading();
             try {
-                const result = await callServer('searchByTicket', ticket);
+                const result = await callApi('searchByTicket', ticket);
                 hideLoading();
                 if (result.success && result.data && result.data.length > 0) {
                     loadTransactionToForm(result.data);
@@ -675,9 +687,9 @@
             try {
                 let result;
                 if (appState.isEditMode && appState.editingRowIndices.length > 0) {
-                    result = await callServer('updateDataEntry', batchData);
+                    result = await callApi('updateDataEntry', batchData);
                 } else {
-                    result = await callServer('addDataEntry', batchData);
+                    result = await callApi('addDataEntry', batchData);
                 }
                 hideLoading();
                 if (result.success) {
@@ -877,7 +889,7 @@
         async function loadMasterBarang() {
             showLoading();
             try {
-                const data = await callServer('getMasterBarang');
+                const data = await callApi('getMasterBarang');
                 hideLoading();
                 appState.masterBarang = data;
                 renderMasterBarang(data);
@@ -915,7 +927,7 @@
         async function loadStockGudang() {
             showLoading();
             try {
-                const data = await callServer('getStockGudang');
+                const data = await callApi('getStockGudang');
                 hideLoading();
                 appState.stockGudang = data;
                 renderStockGudang(data);
@@ -951,12 +963,12 @@
         }
 
         // ============================================
-        // STOCK OPNAME (FIXED)
+        // STOCK OPNAME
         // ============================================
         async function loadStockOpname() {
             showLoading();
             try {
-                const lokasiList = await callServer('getLokasiList');
+                const lokasiList = await callApi('getLokasiList');
                 hideLoading();
                 const select = document.getElementById('opnameLokasi');
                 select.innerHTML = '<option value="">-- Pilih Lokasi --</option>';
@@ -992,8 +1004,8 @@
 
             showLoading();
             try {
-                const data = await callServer('getStockOpname', lokasi);
-                hideLoading();   // <<< FIX: hideLoading() SELALU dipanggil setelah await selesai
+                const data = await callApi('getStockOpname', lokasi);
+                hideLoading();
 
                 if (!data || data.length === 0) {
                     document.getElementById('opnameTableBody').innerHTML = '<tr><td colspan="9" style="text-align:center;">Tidak ada barang di lokasi ini</td></tr>';
@@ -1003,7 +1015,6 @@
                     return;
                 }
 
-                // FIX: Simpan data ke state agar bisa di-filter tanpa reload
                 appState.opnameData = data;
 
                 document.getElementById('btnExport').disabled = false;
@@ -1011,17 +1022,15 @@
                 document.getElementById('opnameAlert').style.display = 'none';
                 document.getElementById('opnameFilterBar').style.display = 'flex';
 
-                // FIX: Default filter = Belum Teropname (hanya tampilkan yang belum)
                 document.getElementById('opnameFilterStatus').value = 'belum';
                 applyOpnameFilter();
 
             } catch (error) {
-                hideLoading();   // <<< FIX: hideLoading() juga di catch
+                hideLoading();
                 showToast('Gagal memuat data opname: ' + error, 'error');
             }
         }
 
-        // FIX: Fungsi filter opname baru - filter dari state, bukan reload dari server
         function applyOpnameFilter() {
             const filterVal = document.getElementById('opnameFilterStatus').value;
             let filtered;
@@ -1092,8 +1101,6 @@
             const lokasi = document.getElementById('opnameLokasi').value;
             if (!lokasi) { showToast('Pilih lokasi dulu!', 'warning'); return; }
 
-            // FIX: Ambil semua row yang di-render saat ini (bisa dari filter apapun)
-            // tapi hanya simpan yang user set ke "Sudah"
             const rows = document.querySelectorAll('#opnameTableBody tr');
             const itemsToUpdate = [];
 
@@ -1116,15 +1123,12 @@
 
             showLoading();
             try {
-                const result = await callServer('saveStockOpnameStatus', itemsToUpdate);
-                // FIX: hideLoading() SEBELUM refresh, bukan hanya di else
+                const result = await callApi('saveStockOpnameStatus', itemsToUpdate);
                 hideLoading();
 
                 if (result.success) {
                     showToast(result.message, 'success');
 
-                    // FIX: Update state lokal dulu (tandai item yg disimpan sbg sudah teropname)
-                    // sehingga refresh filter tidak perlu panggil server lagi
                     const updatedKodes = new Set(itemsToUpdate.map(i => i.kode));
                     const today = new Date();
                     const dateStr = `${today.getDate()}/${today.getMonth()+1}/${today.getFullYear()}`;
@@ -1136,8 +1140,6 @@
                         return item;
                     });
 
-                    // FIX: Re-apply filter setelah state diupdate
-                    // Default kembali ke "Belum" supaya barang yang baru di-opname hilang dari view
                     document.getElementById('opnameFilterStatus').value = 'belum';
                     applyOpnameFilter();
 
@@ -1155,7 +1157,7 @@
             if (!lokasi) { showToast('Pilih lokasi dulu!', 'warning'); return; }
             showLoading();
             try {
-                const result = await callServer('exportStockOpnameToExcel', lokasi);
+                const result = await callApi('exportStockOpnameToExcel', lokasi);
                 hideLoading();
                 if (result.success && result.data) {
                     const worksheet = XLSX.utils.json_to_sheet(result.data, {
@@ -1187,7 +1189,7 @@
         async function loadTransaksi() {
             showLoading();
             try {
-                const data = await callServer('getDataEntry');
+                const data = await callApi('getDataEntry');
                 hideLoading();
                 appState.dataEntry = data;
                 renderTransaksi(data);
@@ -1254,6 +1256,7 @@
         function showLoading() { document.getElementById('loading').classList.add('active'); }
         function hideLoading() { document.getElementById('loading').classList.remove('active'); }
 
+        // Event listeners untuk enter di login
         document.getElementById('loginPassword').addEventListener('keypress', e => { if (e.key === 'Enter') handleLogin(); });
         document.getElementById('loginUsername').addEventListener('keypress', e => { if (e.key === 'Enter') handleLogin(); });
     </script>
