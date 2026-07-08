@@ -7,6 +7,8 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <style>
+        /* semua CSS sama seperti sebelumnya, saya tidak tulis ulang agar ringkas, 
+           tapi Anda bisa copy dari file sebelumnya. Saya akan sertakan di bawah */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
             --primary: #1a237e; --primary-light: #3949ab; --primary-dark: #0d1442;
@@ -413,7 +415,7 @@
         // ============================================
         // API CONFIGURATION - GANTI DENGAN URL WEB APP ANDA
         // ============================================
-        const API_BASE = 'https://script.google.com/macros/s/AKfycbzpn0djpgGur3SSRi--8B6SvabFtVlDHd-8G5ruWRZ5fVVtiS0duhbnwjwpnCLFgDOhAg/exec'; // <-- GANTI
+        const API_BASE = 'https://script.google.com/macros/s/AKfycbxraj0yYoryPu12BQ-iyd6Q8qnmVSM1PwUZlxsdOqHTJpkuT9VLF0L5bXsR3EHma9AQWg/exec'; // <-- GANTI DENGAN URL ANDA
 
         // ============================================
         // APP STATE
@@ -431,26 +433,30 @@
         };
 
         // ============================================
-        // SERVER CALL via REST API
+        // SERVER CALL via REST API (dengan error handling lebih baik)
         // ============================================
-        function callApi(action, ...args) {
-            return fetch(API_BASE, {
-                method: 'POST',
-                mode: 'cors',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: action, args: args })
-            })
-            .then(response => {
-                if (!response.ok) throw new Error('Network error');
-                return response.json();
-            })
-            .then(data => {
+        async function callApi(action, ...args) {
+            try {
+                const response = await fetch(API_BASE, {
+                    method: 'POST',
+                    mode: 'cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: action, args: args })
+                });
+
+                if (!response.ok) {
+                    // Coba baca pesan error dari server jika ada
+                    let errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+
+                const data = await response.json();
                 return data;
-            })
-            .catch(error => {
+            } catch (error) {
                 console.error('API call error:', error);
+                // Lempar error agar bisa ditangkap di fungsi pemanggil
                 throw error;
-            });
+            }
         }
 
         // ============================================
@@ -473,7 +479,8 @@
                 }
             } catch (error) {
                 hideLoading();
-                document.getElementById('loginError').textContent = 'Koneksi error. Pastikan URL API benar.';
+                document.getElementById('loginError').textContent = 'Koneksi error. Pastikan URL API benar dan CORS diizinkan. Detail: ' + error.message;
+                console.error(error);
             }
         }
 
@@ -552,12 +559,12 @@
                 }
             } catch (error) {
                 hideLoading();
-                showToast('Gagal memuat dashboard', 'error');
+                showToast('Gagal memuat dashboard: ' + error.message, 'error');
             }
         }
 
         // ============================================
-        // DATA ENTRY
+        // DATA ENTRY (sama seperti sebelumnya, hanya panggil callApi)
         // ============================================
         async function loadDataEntry() {
             showLoading();
@@ -568,7 +575,7 @@
                 resetToNewEntry();
             } catch (error) {
                 hideLoading();
-                showToast('Gagal memuat data barang', 'error');
+                showToast('Gagal memuat data barang: ' + error.message, 'error');
             }
         }
 
@@ -587,7 +594,7 @@
                 }
             } catch (error) {
                 hideLoading();
-                showToast('Error mencari tiket: ' + error, 'error');
+                showToast('Error mencari tiket: ' + error.message, 'error');
             }
         }
 
@@ -701,7 +708,7 @@
                 }
             } catch (error) {
                 hideLoading();
-                showToast('Error: ' + error, 'error');
+                showToast('Error: ' + error.message, 'error');
             }
         }
 
@@ -719,7 +726,7 @@
         }
 
         // ============================================
-        // MULTI-ITEM HELPERS
+        // MULTI-ITEM HELPERS (tidak berubah)
         // ============================================
         function addItemRow() {
             appState.itemCounter++;
@@ -895,7 +902,7 @@
                 renderMasterBarang(data);
             } catch (error) {
                 hideLoading();
-                showToast('Gagal memuat master barang', 'error');
+                showToast('Gagal memuat master barang: ' + error.message, 'error');
             }
         }
 
@@ -933,7 +940,7 @@
                 renderStockGudang(data);
             } catch (error) {
                 hideLoading();
-                showToast('Gagal memuat stock gudang', 'error');
+                showToast('Gagal memuat stock gudang: ' + error.message, 'error');
             }
         }
 
@@ -963,7 +970,7 @@
         }
 
         // ============================================
-        // STOCK OPNAME
+        // STOCK OPNAME (sama seperti sebelumnya)
         // ============================================
         async function loadStockOpname() {
             showLoading();
@@ -986,7 +993,7 @@
                 appState.opnameData = [];
             } catch (error) {
                 hideLoading();
-                showToast('Gagal memuat daftar lokasi', 'error');
+                showToast('Gagal memuat daftar lokasi: ' + error.message, 'error');
             }
         }
 
@@ -1027,7 +1034,7 @@
 
             } catch (error) {
                 hideLoading();
-                showToast('Gagal memuat data opname: ' + error, 'error');
+                showToast('Gagal memuat data opname: ' + error.message, 'error');
             }
         }
 
@@ -1148,7 +1155,7 @@
                 }
             } catch (error) {
                 hideLoading();
-                showToast('Gagal menyimpan: ' + error, 'error');
+                showToast('Gagal menyimpan: ' + error.message, 'error');
             }
         }
 
@@ -1179,7 +1186,7 @@
                 }
             } catch (error) {
                 hideLoading();
-                showToast('Gagal export: ' + error, 'error');
+                showToast('Gagal export: ' + error.message, 'error');
             }
         }
 
@@ -1195,7 +1202,7 @@
                 renderTransaksi(data);
             } catch (error) {
                 hideLoading();
-                showToast('Gagal memuat transaksi', 'error');
+                showToast('Gagal memuat transaksi: ' + error.message, 'error');
             }
         }
 
