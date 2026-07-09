@@ -401,10 +401,6 @@
         // ============================================
         // ⚙️  KONFIGURASI — GANTI URL DI BAWAH INI
         // ============================================
-        // Setelah deploy Apps Script sebagai Web App:
-        // Extensions > Apps Script > Deploy > New Deployment
-        // Type: Web App | Execute as: Me | Access: Anyone
-        // Copy URL-nya dan paste di sini ↓
         const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzjGmFB1L9EBuMO3BMpNTYCe7T0NLeVUB85PApS5cA17UL2Fg0qDc7bblTcS8CAJm6tXA/exec';
         // ============================================
 
@@ -424,13 +420,12 @@
         };
 
         // ============================================
-        // SERVER CALL — fetch() ke Apps Script Web App
+        // SERVER CALL
         // ============================================
         async function callServer(functionName, ...args) {
             const response = await fetch(APPS_SCRIPT_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain' },
-                // Content-Type: text/plain dipakai untuk bypass CORS preflight di Apps Script
                 body: JSON.stringify({ function: functionName, args: args })
             });
             if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
@@ -458,7 +453,7 @@
                 }
             } catch (error) {
                 hideLoading();
-                document.getElementById('loginError').textContent = 'Koneksi error. Pastikan URL Apps Script sudah diset dan di-deploy dengan akses "Anyone".';
+                document.getElementById('loginError').textContent = 'Koneksi error.';
                 console.error(error);
             }
         }
@@ -633,7 +628,11 @@
             inputs.forEach(el => { if (el.id !== 'searchTicketInput') el.disabled = !enable; });
             document.getElementById('btnSubmit').disabled = !enable;
             document.getElementById('btnAddItem').disabled = !enable;
-            document.querySelectorAll('.btn-remove-item').forEach(btn => btn.style.display = enable ? 'flex' : 'none');
+            
+            // Update tombol remove di semua item row
+            document.querySelectorAll('.btn-remove-item').forEach(btn => {
+                btn.style.display = enable ? 'flex' : 'none';
+            });
         }
 
         function resetToNewEntry() {
@@ -690,34 +689,21 @@
         }
 
         function resetForm() {
-    document.getElementById('entryForm').reset();
-    document.getElementById('entryTanggal').value = new Date().toISOString().split('T')[0];
-    appState.itemCounter = 0;
-    appState.itemData = {};
-    document.getElementById('itemsContainer').innerHTML = '';
-    
-    if (!appState.isEditMode) {
-        toggleFormInputs(true);
-        document.getElementById('btnSubmitText').textContent = 'Simpan Transaksi';
-    } else {
-        toggleFormInputs(false);
-    }
-    
-    addItemRow();
-    
-    // PERBAIKAN: Paksa enable input pada item barusan dibuat jika bukan mode edit
-    if (!appState.isEditMode) {
-        const itemIds = Object.keys(appState.itemData);
-        if (itemIds.length > 0) {
-            const lastItemId = itemIds[itemIds.length - 1];
-            const searchInput = document.getElementById(`search_${lastItemId}`);
-            const qtyInput = document.getElementById(`qty_${lastItemId}`);
+            document.getElementById('entryForm').reset();
+            document.getElementById('entryTanggal').value = new Date().toISOString().split('T')[0];
+            appState.itemCounter = 0;
+            appState.itemData = {};
+            document.getElementById('itemsContainer').innerHTML = '';
             
-            if (searchInput) searchInput.disabled = false;
-            if (qtyInput) qtyInput.disabled = false;
+            if (!appState.isEditMode) {
+                toggleFormInputs(true);
+                document.getElementById('btnSubmitText').textContent = 'Simpan Transaksi';
+            } else {
+                toggleFormInputs(false);
+            }
+            
+            addItemRow();
         }
-    }
-}
 
         // ============================================
         // MULTI-ITEM HELPERS
@@ -728,6 +714,8 @@
             appState.itemData[itemId] = { kodeBarang: '', namaBarang: '', qty: 1, tersedia: 0, stokPaten: 0, _rowIndex: null };
             const container = document.getElementById('itemsContainer');
             const itemNumber = Object.keys(appState.itemData).length;
+            
+            // PERBAIKAN: Hapus atribut 'disabled' dari HTML template
             const row = document.createElement('div');
             row.className = 'item-row';
             row.id = `row_${itemId}`;
@@ -745,13 +733,13 @@
                     <div class="form-group" style="margin-bottom:0; position:relative;">
                         <label>Nama Barang</label>
                         <input type="text" id="search_${itemId}" placeholder="Ketik untuk mencari barang..."
-                               oninput="onItemSearch('${itemId}')" autocomplete="off" disabled>
+                               oninput="onItemSearch('${itemId}')" autocomplete="off">
                         <div class="sd-dropdown-list" id="dropdown_${itemId}"></div>
                     </div>
                     <div class="form-group" style="margin-bottom:0;">
                         <label>Qty</label>
                         <input type="number" id="qty_${itemId}" min="1" value="1"
-                               oninput="onItemQtyChange('${itemId}')" disabled>
+                               oninput="onItemQtyChange('${itemId}')">
                     </div>
                     <div></div>
                 </div>
@@ -769,8 +757,21 @@
             `;
             container.appendChild(row);
             updateItemCount();
+            
+            // LOGIC BARU: Atur status disabled berdasarkan mode saat ini
             if (!appState.isEditMode) {
-                setTimeout(() => { const el = document.getElementById(`search_${itemId}`); if(el) el.focus(); }, 100);
+                // Jika mode entry baru, pastikan enabled
+                const searchInput = document.getElementById(`search_${itemId}`);
+                const qtyInput = document.getElementById(`qty_${itemId}`);
+                if (searchInput) searchInput.disabled = false;
+                if (qtyInput) qtyInput.disabled = false;
+                setTimeout(() => { if(searchInput) searchInput.focus(); }, 100);
+            } else {
+                // Jika mode edit, pastikan disabled (karena form utama juga disabled sampai tombol Edit ditekan)
+                const searchInput = document.getElementById(`search_${itemId}`);
+                const qtyInput = document.getElementById(`qty_${itemId}`);
+                if (searchInput) searchInput.disabled = true;
+                if (qtyInput) qtyInput.disabled = true;
             }
         }
 
