@@ -1,0 +1,1233 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Binus Alam Sutera Inventory</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #1a237e; --primary-light: #3949ab; --primary-dark: #0d1442;
+            --accent: #ff6f00; --success: #2e7d32; --danger: #c62828;
+            --warning: #f57f17; --info: #0277bd; --bg: #f5f5f5; --card: #ffffff;
+            --text: #212121; --text-light: #757575; --border: #e0e0e0;
+            --shadow: 0 2px 10px rgba(0,0,0,0.08); --shadow-lg: 0 4px 20px rgba(0,0,0,0.12);
+        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; line-height: 1.6; }
+        .login-container { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 50%, var(--primary-light) 100%); padding: 20px; }
+        .login-box { background: white; padding: 40px; border-radius: 12px; box-shadow: var(--shadow-lg); width: 100%; max-width: 420px; text-align: center; }
+        .login-box .logo { width: 80px; height: 80px; background: linear-gradient(135deg, var(--primary), var(--primary-light)); border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: white; }
+        .login-box h1 { color: var(--primary); margin-bottom: 5px; font-size: 1.4rem; }
+        .login-box h2 { color: var(--accent); font-size: 0.85rem; margin-bottom: 30px; font-weight: 400; }
+        .login-box .error-msg { color: var(--danger); margin-top: 12px; font-size: 0.85rem; min-height: 20px; }
+        .form-group { margin-bottom: 20px; text-align: left; }
+        .form-group label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 0.85rem; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px 16px; border: 2px solid var(--border); border-radius: 8px; font-size: 0.9rem; outline: none; transition: all 0.3s; font-family: inherit; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(26,35,126,0.1); }
+        .form-group input[readonly], .form-group input:disabled, .form-group select:disabled, .form-group textarea:disabled { background: #f5f5f5; color: #757575; cursor: not-allowed; }
+        .form-group input[readonly]:not(:disabled) { font-weight: 600; color: var(--primary); }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .form-grid .full-width { grid-column: 1 / -1; }
+        .btn { padding: 12px 24px; border: none; border-radius: 8px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.3s; display: inline-flex; align-items: center; gap: 8px; font-family: inherit; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-light); }
+        .btn-success { background: var(--success); color: white; }
+        .btn-success:hover { background: #388e3c; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-danger:hover { background: #d32f2f; }
+        .btn-warning { background: var(--warning); color: white; }
+        .btn-info { background: var(--info); color: white; }
+        .btn-sm { padding: 8px 16px; font-size: 0.8rem; }
+        .btn-block { width: 100%; justify-content: center; }
+        .app-container { display: none; }
+        .app-container.active { display: flex; }
+        .sidebar { width: 260px; background: var(--primary-dark); color: white; min-height: 100vh; position: fixed; left: 0; top: 0; z-index: 100; transition: all 0.3s; overflow-y: auto; }
+        .sidebar-header { padding: 24px 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .sidebar-header h2 { font-size: 1.1rem; }
+        .sidebar-header p { font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-top: 4px; }
+        .sidebar-menu { padding: 16px 0; }
+        .menu-item { padding: 14px 24px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: all 0.3s; color: rgba(255,255,255,0.7); font-size: 0.9rem; }
+        .menu-item:hover, .menu-item.active { background: rgba(255,255,255,0.1); color: white; border-left: 3px solid var(--accent); }
+        .menu-item i { width: 20px; text-align: center; }
+        .main-content { margin-left: 260px; padding: 24px; width: calc(100% - 260px); min-height: 100vh; }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+        .top-bar h1 { font-size: 1.4rem; color: var(--primary); }
+        .user-info { display: flex; align-items: center; gap: 12px; }
+        .user-info .avatar { width: 36px; height: 36px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .stat-card { background: var(--card); padding: 20px; border-radius: 12px; box-shadow: var(--shadow); display: flex; align-items: center; gap: 16px; transition: transform 0.3s; }
+        .stat-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+        .stat-card .icon { width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; color: white; }
+        .stat-card .icon.blue { background: var(--info); }
+        .stat-card .icon.green { background: var(--success); }
+        .stat-card .icon.red { background: var(--danger); }
+        .stat-card .icon.orange { background: var(--accent); }
+        .stat-card .info h3 { font-size: 1.5rem; }
+        .stat-card .info p { font-size: 0.75rem; color: var(--text-light); }
+        .card { background: var(--card); border-radius: 12px; box-shadow: var(--shadow); margin-bottom: 20px; overflow: hidden; }
+        .card-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .card-header h3 { font-size: 1rem; display: flex; align-items: center; gap: 8px; }
+        .card-body { padding: 20px; }
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        table th, table td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
+        table th { background: #f8f9fa; font-weight: 600; position: sticky; top: 0; z-index: 1; }
+        table tr:hover { background: #f8f9fa; }
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; display: inline-block; }
+        .badge-success { background: #e8f5e9; color: var(--success); }
+        .badge-danger { background: #ffebee; color: var(--danger); }
+        .badge-warning { background: #fff8e1; color: var(--warning); }
+        .badge-info { background: #e3f2fd; color: var(--info); }
+        .badge-primary { background: #e8eaf6; color: var(--primary); }
+        .badge-dark { background: #424242; color: #fff; }
+        .alert { padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 0.85rem; display: flex; align-items: center; gap: 10px; }
+        .alert-warning { background: #fff8e1; border: 1px solid #ffe082; color: #e65100; }
+        .alert-success { background: #e8f5e9; border: 1px solid #a5d6a7; color: var(--success); }
+        .low-stock-list { max-height: 300px; overflow-y: auto; }
+        .low-stock-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
+        .low-stock-item:last-child { border-bottom: none; }
+        .low-stock-item .item-info h4 { font-size: 0.85rem; }
+        .low-stock-item .item-info p { font-size: 0.75rem; color: var(--text-light); }
+        .low-stock-item .stock-info { text-align: right; }
+        .low-stock-item .stock-info .current { font-size: 1.1rem; font-weight: bold; color: var(--danger); }
+        .low-stock-item .stock-info .minimum { font-size: 0.75rem; color: var(--text-light); }
+        .search-box { position: relative; margin-bottom: 16px; }
+        .search-box input { width: 100%; padding: 12px 16px 12px 40px; border: 2px solid var(--border); border-radius: 8px; font-size: 0.9rem; outline: none; }
+        .search-box input:focus { border-color: var(--primary); }
+        .search-box i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-light); }
+        .page { display: none; }
+        .page.active { display: block; }
+        .toast { position: fixed; top: 20px; right: 20px; padding: 16px 24px; border-radius: 8px; color: white; font-weight: 500; z-index: 9999; transform: translateX(400px); transition: all 0.3s; box-shadow: var(--shadow-lg); font-size: 0.9rem; }
+        .toast.show { transform: translateX(0); }
+        .toast-success { background: var(--success); }
+        .toast-error { background: var(--danger); }
+        .toast-warning { background: var(--warning); }
+        .toast-info { background: var(--info); }
+        .loading { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); z-index: 9998; align-items: center; justify-content: center; }
+        .loading.active { display: flex; }
+        .spinner { width: 40px; height: 40px; border: 4px solid var(--border); border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .items-section { margin-top: 20px; border: 2px dashed var(--border); border-radius: 12px; padding: 20px; background: #fafafa; }
+        .items-section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .items-section-header h4 { font-size: 1rem; color: var(--primary); display: flex; align-items: center; gap: 8px; }
+        .item-row { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 12px; position: relative; transition: all 0.3s; }
+        .item-row:hover { border-color: var(--primary); box-shadow: var(--shadow); }
+        .item-row-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .item-row-header .item-number { background: var(--primary); color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: bold; }
+        .item-row-grid { display: grid; grid-template-columns: 2fr 1fr auto; gap: 12px; align-items: end; }
+        .item-preview-mini { background: #f8f9fa; padding: 10px 14px; border-radius: 6px; margin-top: 10px; border-left: 3px solid var(--primary); font-size: 0.78rem; }
+        .item-preview-mini .detail { display: flex; justify-content: space-between; margin-bottom: 4px; }
+        .item-preview-mini .detail span:first-child { color: var(--text-light); }
+        .item-preview-mini .detail span:last-child { font-weight: 600; }
+        .item-stock-warning { background: #fff3e0; border: 1px solid #ffcc02; padding: 8px 12px; border-radius: 6px; margin-top: 8px; font-size: 0.75rem; color: #e65100; display: flex; align-items: center; gap: 6px; }
+        .btn-remove-item { background: var(--danger); color: white; border: none; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s; flex-shrink: 0; }
+        .btn-remove-item:hover { background: #b71c1c; transform: scale(1.1); }
+        .btn-add-item { width: 100%; padding: 14px; border: 2px dashed var(--primary); background: rgba(26,35,126,0.05); color: var(--primary); border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.3s; font-size: 0.9rem; }
+        .btn-add-item:hover { background: rgba(26,35,126,0.1); border-color: var(--primary-light); }
+        .item-count-badge { background: var(--accent); color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; margin-left: 8px; }
+        .mutasi-info { background: #e3f2fd; border: 1px solid #90caf9; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 0.78rem; }
+        .mutasi-info h4 { color: var(--info); margin-bottom: 6px; font-size: 0.85rem; }
+        .mutasi-info ul { list-style: none; padding: 0; }
+        .mutasi-info ul li { padding: 3px 0; display: flex; align-items: center; gap: 6px; }
+        .mutasi-info ul li .badge { font-size: 0.65rem; }
+        .sd-dropdown-list { position: absolute; background: white; border: 1px solid var(--border); border-radius: 8px; max-height: 200px; overflow-y: auto; z-index: 500; width: calc(100% - 32px); box-shadow: var(--shadow); display: none; }
+        .sd-dropdown-list.show { display: block; }
+        .dropdown-item { padding: 10px 14px; cursor: pointer; font-size: 0.85rem; border-bottom: 1px solid #f0f0f0; }
+        .dropdown-item:hover { background: #f5f5f5; }
+        .opname-filter-bar { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; padding: 12px 16px; background: #f8f9fa; border-radius: 8px; border: 1px solid var(--border); }
+        .opname-filter-bar label { font-size: 0.85rem; font-weight: 600; color: var(--text); white-space: nowrap; }
+        .opname-filter-bar select { padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.85rem; outline: none; }
+        .opname-summary { display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+        .opname-summary .sum-item { padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
+        .menu-toggle { display: none; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--primary); }
+        /* Config banner */
+        .config-banner { background: #fff3e0; border: 2px solid var(--accent); border-radius: 8px; padding: 16px 20px; margin-bottom: 20px; font-size: 0.9rem; color: #e65100; display: flex; align-items: center; gap: 12px; }
+        .config-banner code { background: rgba(0,0,0,0.08); padding: 2px 8px; border-radius: 4px; font-size: 0.85rem; }
+        @media (max-width: 768px) {
+            .menu-toggle { display: block; }
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.open { transform: translateX(0); }
+            .main-content { margin-left: 0; width: 100%; padding: 16px; }
+            .form-grid { grid-template-columns: 1fr; }
+            .stats-grid { grid-template-columns: 1fr 1fr; }
+            .item-row-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading" id="loading"><div class="spinner"></div></div>
+    <div class="toast" id="toast"></div>
+
+    <!-- LOGIN -->
+    <div class="login-container" id="loginPage">
+        <div class="login-box">
+            <div class="logo"><i class="fas fa-warehouse"></i></div>
+            <h1>Binus Alam Sutera</h1>
+            <h2>Inventory Management System</h2>
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" id="loginUsername" value="admin">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="loginPassword" value="admin123">
+            </div>
+            <button class="btn btn-primary btn-block" onclick="handleLogin()">
+                <i class="fas fa-sign-in-alt"></i> Login
+            </button>
+            <p class="error-msg" id="loginError"></p>
+        </div>
+    </div>
+
+    <!-- APP -->
+    <div class="app-container" id="appContainer">
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2><i class="fas fa-warehouse"></i> BAS Inventory</h2>
+                <p>Binus Alam Sutera</p>
+            </div>
+            <div class="sidebar-menu">
+                <div class="menu-item active" onclick="showPage('dashboard', this)"><i class="fas fa-tachometer-alt"></i> Dashboard</div>
+                <div class="menu-item" onclick="showPage('dataEntry', this)"><i class="fas fa-plus-circle"></i> Data Entry</div>
+                <div class="menu-item" onclick="showPage('masterBarang', this)"><i class="fas fa-boxes"></i> Master Barang</div>
+                <div class="menu-item" onclick="showPage('stockGudang', this)"><i class="fas fa-warehouse"></i> Stock Gudang</div>
+                <div class="menu-item" onclick="showPage('stockOpname', this)"><i class="fas fa-clipboard-check"></i> Stock Opname</div>
+                <div class="menu-item" onclick="showPage('transaksi', this)"><i class="fas fa-history"></i> Riwayat Transaksi</div>
+                <div class="menu-item" onclick="handleLogout()" style="margin-top: 40px; color: #ef9a9a;"><i class="fas fa-sign-out-alt"></i> Logout</div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="top-bar">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <button class="menu-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+                    <h1 id="pageTitle">Dashboard</h1>
+                </div>
+                <div class="user-info">
+                    <span style="font-size: 0.85rem; color: var(--text-light);">Admin</span>
+                    <div class="avatar">A</div>
+                </div>
+            </div>
+
+            <!-- DASHBOARD -->
+            <div class="page active" id="page-dashboard">
+                <div class="stats-grid">
+                    <div class="stat-card"><div class="icon blue"><i class="fas fa-boxes"></i></div><div class="info"><h3 id="stat-totalItems">0</h3><p>Total Jenis Barang</p></div></div>
+                    <div class="stat-card"><div class="icon green"><i class="fas fa-cubes"></i></div><div class="info"><h3 id="stat-totalStock">0</h3><p>Total Stok Tersedia</p></div></div>
+                    <div class="stat-card"><div class="icon red"><i class="fas fa-exclamation-triangle"></i></div><div class="info"><h3 id="stat-totalRusak">0</h3><p>Barang Rusak</p></div></div>
+                    <div class="stat-card"><div class="icon orange"><i class="fas fa-exchange-alt"></i></div><div class="info"><h3 id="stat-totalTransaksi">0</h3><p>Total Transaksi</p></div></div>
+                </div>
+                <div class="card" id="lowStockCard" style="display:none;">
+                    <div class="card-header"><h3><i class="fas fa-exclamation-circle" style="color: var(--danger);"></i> Peringatan Stok Rendah</h3></div>
+                    <div class="card-body">
+                        <div class="alert alert-warning"><i class="fas fa-info-circle"></i> Barang di bawah ini memiliki stok tersedia di bawah stok paten. Segera beli baru!</div>
+                        <div class="low-stock-list" id="lowStockList"></div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><h3><i class="fas fa-clock"></i> Transaksi Terakhir</h3></div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table>
+                                <thead><tr><th>Tanggal</th><th>Kode</th><th>Nama Barang</th><th>Qty</th><th>Mutasi</th><th>Keterangan</th></tr></thead>
+                                <tbody id="recentTransactions"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DATA ENTRY -->
+            <div class="page" id="page-dataEntry">
+                <div class="card">
+                    <div class="card-header"><h3><i class="fas fa-plus-circle"></i> Input Transaksi Baru</h3></div>
+                    <div class="card-body">
+                        <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #90caf9;">
+                            <h4 style="margin-bottom: 10px; color: var(--primary);"><i class="fas fa-search"></i> Cari Transaksi Lama (Edit Mode)</h4>
+                            <div style="display: flex; gap: 10px;">
+                                <input type="text" id="searchTicketInput" placeholder="Masukkan Nomor Tiket..." style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 6px;">
+                                <button class="btn btn-primary" onclick="searchTicket()">Cari</button>
+                                <button class="btn btn-warning" onclick="resetToNewEntry()" style="display:none;" id="btnResetSearch">Batal / Baru</button>
+                            </div>
+                        </div>
+                        <div class="mutasi-info">
+                            <h4><i class="fas fa-info-circle"></i> Kode Mutasi:</h4>
+                            <ul>
+                                <li><span class="badge badge-info">1</span> Masuk Peminjaman (Barang dikembalikan)</li>
+                                <li><span class="badge badge-warning">2</span> Keluar (Barang dipinjam/keluar)</li>
+                                <li><span class="badge badge-danger">3</span> Rusak</li>
+                                <li><span class="badge badge-danger">4</span> Permanen (Keluar Permanen)</li>
+                                <li><span class="badge badge-success">5</span> Masuk Baru (Stok Baru)</li>
+                            </ul>
+                        </div>
+                        <form id="entryForm" onsubmit="submitEntry(event)">
+                            <div class="form-grid">
+                                <div class="form-group"><label>Tanggal</label><input type="date" id="entryTanggal" required disabled></div>
+                                <div class="form-group"><label>Nomor Tiket / PO</label><input type="text" id="entryTicket" placeholder="Contoh: 371027" required disabled></div>
+                                <div class="form-group"><label>Nama Peminjam / PIC</label><input type="text" id="entryPeminjam" placeholder="Nama peminjam atau PIC" required disabled></div>
+                                <div class="form-group"><label>Kode Mutasi</label>
+                                    <select id="entryKodeMutasi" required onchange="updateAllItemWarnings()" disabled>
+                                        <option value="">-- Pilih Kode Mutasi --</option>
+                                        <option value="1">1 - Masuk Peminjaman (Pengembalian)</option>
+                                        <option value="2">2 - Keluar (Dipinjam/Keluar)</option>
+                                        <option value="3">3 - Rusak</option>
+                                        <option value="4">4 - Permanen (Keluar Permanen)</option>
+                                        <option value="5">5 - Masuk Baru (Stok Baru)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group full-width"><label>Keterangan</label><textarea id="entryKeterangan" rows="2" placeholder="Keterangan tambahan..." disabled></textarea></div>
+                            </div>
+                            <div id="editModeControl" style="display:none; margin-bottom: 20px; text-align: right;">
+                                <button type="button" class="btn btn-warning" onclick="enableEditMode()"><i class="fas fa-edit"></i> Edit Transaksi Ini</button>
+                            </div>
+                            <div class="items-section">
+                                <div class="items-section-header">
+                                    <h4><i class="fas fa-list"></i> Daftar Barang<span class="item-count-badge" id="itemCountBadge">1 item</span></h4>
+                                </div>
+                                <div id="itemsContainer"></div>
+                                <button type="button" class="btn-add-item" id="btnAddItem" onclick="addItemRow()" disabled><i class="fas fa-plus"></i> Tambah Barang Lain</button>
+                            </div>
+                            <div style="margin-top: 20px; display: flex; gap: 12px;">
+                                <button type="submit" class="btn btn-success" id="btnSubmit" disabled><i class="fas fa-save"></i> <span id="btnSubmitText">Simpan Transaksi</span></button>
+                                <button type="button" class="btn btn-danger" onclick="resetForm()"><i class="fas fa-redo"></i> Reset</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MASTER BARANG -->
+            <div class="page" id="page-masterBarang">
+                <div class="card">
+                    <div class="card-header"><h3><i class="fas fa-boxes"></i> Master Barang</h3><span class="badge badge-info" id="masterCount">0 items</span></div>
+                    <div class="card-body">
+                        <div class="search-box"><i class="fas fa-search"></i><input type="text" id="searchMaster" placeholder="Cari kode atau nama barang..." oninput="filterMasterBarang()"></div>
+                        <div class="table-container" style="max-height: 600px; overflow-y: auto;">
+                            <table>
+                                <thead><tr><th>Kode</th><th>Nama Barang</th><th>Lokasi</th><th>Tersedia</th><th>Paten</th><th>Status</th></tr></thead>
+                                <tbody id="masterBarangTable"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STOCK GUDANG -->
+            <div class="page" id="page-stockGudang">
+                <div class="card">
+                    <div class="card-header"><h3><i class="fas fa-warehouse"></i> Stock Gudang</h3><span class="badge badge-info" id="stockCount">0 items</span></div>
+                    <div class="card-body">
+                        <div class="search-box"><i class="fas fa-search"></i><input type="text" id="searchStock" placeholder="Cari nama barang..." oninput="filterStockGudang()"></div>
+                        <div class="table-container" style="max-height: 600px; overflow-y: auto;">
+                            <table>
+                                <thead><tr><th>Nama Barang</th><th>Spec. Note</th><th>Stok</th><th>Berfungsi</th><th>Rusak (IT Loc)</th><th>Rusak (Asset)</th></tr></thead>
+                                <tbody id="stockGudangTable"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STOCK OPNAME -->
+            <div class="page" id="page-stockOpname">
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-clipboard-check"></i> Stock Opname</h3>
+                        <button class="btn btn-success" onclick="saveOpnameStatus()" id="btnSaveOpname" style="display:none;">
+                            <i class="fas fa-save"></i> Simpan Status Opname
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Pilih Lokasi</label>
+                                <select id="opnameLokasi" onchange="onLokasiChange()">
+                                    <option value="">-- Pilih Lokasi --</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="display: flex; align-items: flex-end;">
+                                <button class="btn btn-info" onclick="exportToExcel()" id="btnExport" disabled>
+                                    <i class="fas fa-file-excel"></i> Export Excel
+                                </button>
+                            </div>
+                        </div>
+                        <div class="opname-filter-bar" id="opnameFilterBar" style="display:none;">
+                            <label><i class="fas fa-filter"></i> Tampilkan:</label>
+                            <select id="opnameFilterStatus" onchange="applyOpnameFilter()">
+                                <option value="belum">Belum Teropname</option>
+                                <option value="sudah">Sudah Teropname</option>
+                                <option value="semua">Semua Barang</option>
+                            </select>
+                            <div class="opname-summary" id="opnameSummary"></div>
+                        </div>
+                        <div id="opnameAlert" class="alert alert-warning" style="display:none;">
+                            <i class="fas fa-info-circle"></i> Pilih lokasi untuk melihat data stock opname.
+                        </div>
+                        <div class="table-container" style="max-height: 600px; overflow-y: auto;">
+                            <table>
+                                <thead>
+                                    <tr><th>Kode</th><th>Nama Barang</th><th>Lokasi</th><th>Tersedia</th><th>Rusak</th><th>Permanen</th><th>Dipinjam</th><th>Status Fisik</th><th>Status Opname</th></tr>
+                                </thead>
+                                <tbody id="opnameTableBody">
+                                    <tr><td colspan="9" style="text-align:center;">Pilih lokasi terlebih dahulu</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TRANSAKSI -->
+            <div class="page" id="page-transaksi">
+                <div class="card">
+                    <div class="card-header"><h3><i class="fas fa-history"></i> Riwayat Transaksi</h3><span class="badge badge-info" id="transaksiCount">0 transaksi</span></div>
+                    <div class="card-body">
+                        <div class="search-box"><i class="fas fa-search"></i><input type="text" id="searchTransaksi" placeholder="Cari transaksi..." oninput="filterTransaksi()"></div>
+                        <div class="table-container" style="max-height: 600px; overflow-y: auto;">
+                            <table>
+                                <thead><tr><th>Tanggal</th><th>Tiket</th><th>Peminjam</th><th>Kode</th><th>Nama Barang</th><th>Qty</th><th>Mutasi</th><th>Keterangan</th></tr></thead>
+                                <tbody id="transaksiTable"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // ⚙️  KONFIGURASI — GANTI URL DI BAWAH INI
+        // ============================================
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzjGmFB1L9EBuMO3BMpNTYCe7T0NLeVUB85PApS5cA17UL2Fg0qDc7bblTcS8CAJm6tXA/exec';
+        // ============================================
+
+        // ============================================
+        // APP STATE
+        // ============================================
+        let appState = {
+            masterBarang: [],
+            dataEntry: [],
+            stockGudang: [],
+            namaBarangList: [],
+            itemCounter: 0,
+            itemData: {},
+            isEditMode: false,
+            editingRowIndices: [],
+            opnameData: []
+        };
+
+        // ============================================
+        // SERVER CALL
+        // ============================================
+        async function callServer(functionName, ...args) {
+            const response = await fetch(APPS_SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify({ function: functionName, args: args })
+            });
+            if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
+            const result = await response.json();
+            return result;
+        }
+
+        // ============================================
+        // LOGIN
+        // ============================================
+        async function handleLogin() {
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+            showLoading();
+            try {
+                const result = await callServer('login', username, password);
+                hideLoading();
+                if (result.success) {
+                    document.getElementById('loginPage').style.display = 'none';
+                    document.getElementById('appContainer').classList.add('active');
+                    loadDashboard();
+                    showToast(result.message, 'success');
+                } else {
+                    document.getElementById('loginError').textContent = result.message;
+                }
+            } catch (error) {
+                hideLoading();
+                document.getElementById('loginError').textContent = 'Koneksi error.';
+                console.error(error);
+            }
+        }
+
+        function handleLogout() {
+            if (confirm('Yakin mau logout?')) {
+                document.getElementById('loginPage').style.display = 'flex';
+                document.getElementById('appContainer').classList.remove('active');
+                document.getElementById('loginPassword').value = '';
+            }
+        }
+
+        // ============================================
+        // NAVIGATION
+        // ============================================
+        function showPage(page, el) {
+            document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('active'));
+            if (el) el.classList.add('active');
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(`page-${page}`).classList.add('active');
+            const titles = { dashboard: 'Dashboard', dataEntry: 'Data Entry', masterBarang: 'Master Barang', stockGudang: 'Stock Gudang', stockOpname: 'Stock Opname', transaksi: 'Riwayat Transaksi' };
+            document.getElementById('pageTitle').textContent = titles[page] || 'Dashboard';
+            switch (page) {
+                case 'dashboard': loadDashboard(); break;
+                case 'dataEntry': loadDataEntry(); break;
+                case 'masterBarang': loadMasterBarang(); break;
+                case 'stockGudang': loadStockGudang(); break;
+                case 'stockOpname': loadStockOpname(); break;
+                case 'transaksi': loadTransaksi(); break;
+            }
+            document.getElementById('sidebar').classList.remove('open');
+        }
+
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
+
+        // ============================================
+        // DASHBOARD
+        // ============================================
+        async function loadDashboard() {
+            showLoading();
+            try {
+                const data = await callServer('getDashboardData');
+                hideLoading();
+                document.getElementById('stat-totalItems').textContent = data.totalItems || 0;
+                document.getElementById('stat-totalStock').textContent = data.totalStock || 0;
+                document.getElementById('stat-totalRusak').textContent = data.totalRusak || 0;
+                document.getElementById('stat-totalTransaksi').textContent = data.totalTransactions || 0;
+                const lowStockCard = document.getElementById('lowStockCard');
+                const lowStockList = document.getElementById('lowStockList');
+                if (data.lowStockItems && data.lowStockItems.length > 0) {
+                    lowStockCard.style.display = 'block';
+                    lowStockList.innerHTML = data.lowStockItems.map(item => `
+                        <div class="low-stock-item">
+                            <div class="item-info"><h4>${item.nama}</h4><p>${item.kode} | ${item.lokasi}</p></div>
+                            <div class="stock-info"><div class="current">${item.tersedia}</div><div class="minimum">Min: ${item.stokPaten}</div></div>
+                        </div>
+                    `).join('');
+                } else {
+                    lowStockCard.style.display = 'none';
+                }
+                const tbody = document.getElementById('recentTransactions');
+                if (data.recentTransactions && data.recentTransactions.length > 0) {
+                    tbody.innerHTML = data.recentTransactions.map(t => `
+                        <tr>
+                            <td>${formatDate(t['Tanggal'])}</td>
+                            <td><strong>${t['Kode Barang'] || '-'}</strong></td>
+                            <td>${t['Nama Barang'] || '-'}</td>
+                            <td>${t['Qty'] || '-'}</td>
+                            <td>${getMutasiBadge(t['Kode Mutasi'])}</td>
+                            <td>${t['Keterangan'] || '-'}</td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Belum ada transaksi</td></tr>';
+                }
+            } catch (error) {
+                hideLoading();
+                showToast('Gagal memuat dashboard: ' + error, 'error');
+            }
+        }
+
+        // ============================================
+        // DATA ENTRY
+        // ============================================
+        async function loadDataEntry() {
+            showLoading();
+            try {
+                const list = await callServer('getNamaBarangList');
+                hideLoading();
+                appState.namaBarangList = list;
+                resetToNewEntry();
+            } catch (error) {
+                hideLoading();
+                showToast('Gagal memuat data barang', 'error');
+            }
+        }
+
+        async function searchTicket() {
+            const ticket = document.getElementById('searchTicketInput').value.trim();
+            if (!ticket) { showToast('Masukkan nomor tiket!', 'warning'); return; }
+            showLoading();
+            try {
+                const result = await callServer('searchByTicket', ticket);
+                hideLoading();
+                if (result.success && result.data && result.data.length > 0) {
+                    loadTransactionToForm(result.data);
+                    showToast(`Ditemukan ${result.data.length} baris. Klik "Edit" untuk mengubah.`, 'success');
+                } else {
+                    showToast('Tiket tidak ditemukan', 'error');
+                }
+            } catch (error) {
+                hideLoading();
+                showToast('Error mencari tiket: ' + error, 'error');
+            }
+        }
+
+        function loadTransactionToForm(dataRows) {
+            appState.isEditMode = false;
+            appState.editingRowIndices = dataRows.map(r => r._rowIndex);
+            const first = dataRows[0];
+            document.getElementById('entryTanggal').value = formatDateForInput(first['Tanggal']);
+            document.getElementById('entryTicket').value = first['Nomor Tiket/PO'];
+            document.getElementById('entryPeminjam').value = first['Nama Peminjam/Nama PO'];
+            document.getElementById('entryKodeMutasi').value = first['Kode Mutasi'];
+            document.getElementById('entryKeterangan').value = first['Keterangan'];
+            toggleFormInputs(false);
+            document.getElementById('editModeControl').style.display = 'block';
+            document.getElementById('btnResetSearch').style.display = 'inline-flex';
+            document.getElementById('itemsContainer').innerHTML = '';
+            appState.itemCounter = 0;
+            appState.itemData = {};
+            dataRows.forEach((row, index) => {
+                addItemRow();
+                const itemId = Object.keys(appState.itemData)[index];
+                const itemInfo = { kode: row['Kode Barang'], nama: row['Nama Barang'], qty: parseInt(row['Qty']) || 1, tersedia: 0, stokPaten: 0, lokasi: '' };
+                const masterItem = appState.namaBarangList.find(m => m.kode === itemInfo.kode);
+                if (masterItem) { itemInfo.tersedia = masterItem.tersedia; itemInfo.stokPaten = masterItem.stokPaten; itemInfo.lokasi = masterItem.lokasi; }
+                selectItemForInput(itemId, itemInfo, true);
+                appState.itemData[itemId]._rowIndex = row._rowIndex;
+                const qtyEl = document.getElementById(`qty_${itemId}`);
+                if (qtyEl) qtyEl.value = itemInfo.qty;
+                if (appState.itemData[itemId]) appState.itemData[itemId].qty = itemInfo.qty;
+            });
+            updateItemCount();
+        }
+
+        function formatDateForInput(dateStr) {
+            if (!dateStr) return '';
+            const parts = dateStr.split(/[\/\-\.]/);
+            if (parts.length === 3) {
+                let d, m, y;
+                if (parseInt(parts[0]) > 12) { d=parts[0]; m=parts[1]; y=parts[2]; }
+                else if (parseInt(parts[1]) > 12) { d=parts[1]; m=parts[0]; y=parts[2]; }
+                else { d=parts[0]; m=parts[1]; y=parts[2]; }
+                return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+            }
+            const d = new Date(dateStr);
+            if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
+            return '';
+        }
+
+        function enableEditMode() {
+            appState.isEditMode = true;
+            toggleFormInputs(true);
+            document.getElementById('editModeControl').style.display = 'none';
+            document.getElementById('btnSubmitText').textContent = 'Update Transaksi';
+            showToast('Mode Edit Aktif. Silakan ubah data.', 'info');
+        }
+
+        function toggleFormInputs(enable) {
+            const inputs = document.querySelectorAll('#entryForm input, #entryForm select, #entryForm textarea');
+            inputs.forEach(el => { if (el.id !== 'searchTicketInput') el.disabled = !enable; });
+            document.getElementById('btnSubmit').disabled = !enable;
+            document.getElementById('btnAddItem').disabled = !enable;
+            
+            // Update status input di dalam item rows
+            Object.keys(appState.itemData).forEach(itemId => {
+                const searchInput = document.getElementById(`search_${itemId}`);
+                const qtyInput = document.getElementById(`qty_${itemId}`);
+                if (searchInput) searchInput.disabled = !enable;
+                if (qtyInput) qtyInput.disabled = !enable;
+            });
+        }
+
+        function resetToNewEntry() {
+            appState.isEditMode = false;
+            appState.editingRowIndices = [];
+            document.getElementById('searchTicketInput').value = '';
+            document.getElementById('editModeControl').style.display = 'none';
+            document.getElementById('btnResetSearch').style.display = 'none';
+            document.getElementById('btnSubmitText').textContent = 'Simpan Transaksi';
+            resetForm();
+        }
+
+        async function submitEntry(e) {
+            e.preventDefault();
+            const items = [];
+            const itemIds = Object.keys(appState.itemData);
+            if (itemIds.length === 0) { showToast('Tambahkan minimal 1 barang!', 'error'); return; }
+            let hasError = false;
+            itemIds.forEach(itemId => {
+                const item = appState.itemData[itemId];
+                if (!item || !item.kodeBarang) { hasError = true; }
+                else { items.push({ kodeBarang: item.kodeBarang, namaBarang: item.namaBarang, qty: item.qty || 1, _rowIndex: item._rowIndex || null }); }
+            });
+            if (hasError || items.length === 0) { showToast('Pilih barang untuk semua item!', 'error'); return; }
+            const batchData = {
+                tanggal: document.getElementById('entryTanggal').value,
+                ticket: document.getElementById('entryTicket').value,
+                peminjam: document.getElementById('entryPeminjam').value,
+                kodeMutasi: parseInt(document.getElementById('entryKodeMutasi').value),
+                keterangan: document.getElementById('entryKeterangan').value || '-',
+                items: items
+            };
+            if (!batchData.kodeMutasi) { showToast('Pilih kode mutasi!', 'error'); return; }
+            showLoading();
+            try {
+                let result;
+                if (appState.isEditMode && appState.editingRowIndices.length > 0) {
+                    result = await callServer('updateDataEntry', batchData);
+                } else {
+                    result = await callServer('addDataEntry', batchData);
+                }
+                hideLoading();
+                if (result.success) {
+                    showToast(result.message, 'success');
+                    resetToNewEntry();
+                    loadDashboard();
+                } else {
+                    showToast(result.message || 'Gagal menyimpan', 'error');
+                }
+            } catch (error) {
+                hideLoading();
+                showToast('Error: ' + error, 'error');
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('entryForm').reset();
+            document.getElementById('entryTanggal').value = new Date().toISOString().split('T')[0];
+            appState.itemCounter = 0;
+            appState.itemData = {};
+            document.getElementById('itemsContainer').innerHTML = '';
+            
+            if (!appState.isEditMode) {
+                toggleFormInputs(true);
+                document.getElementById('btnSubmitText').textContent = 'Simpan Transaksi';
+            } else {
+                toggleFormInputs(false);
+            }
+            
+            addItemRow();
+        }
+
+        // ============================================
+        // MULTI-ITEM HELPERS
+        // ============================================
+        function addItemRow() {
+            appState.itemCounter++;
+            const itemId = `item_${appState.itemCounter}`;
+            appState.itemData[itemId] = { kodeBarang: '', namaBarang: '', qty: 1, tersedia: 0, stokPaten: 0, _rowIndex: null };
+            const container = document.getElementById('itemsContainer');
+            const itemNumber = Object.keys(appState.itemData).length;
+            
+            const row = document.createElement('div');
+            row.className = 'item-row';
+            row.id = `row_${itemId}`;
+            row.innerHTML = `
+                <div class="item-row-header">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <div class="item-number">${itemNumber}</div>
+                        <strong style="font-size:0.85rem;">Barang #${itemNumber}</strong>
+                    </div>
+                    <button type="button" class="btn-remove-item" onclick="removeItemRow('${itemId}')" title="Hapus barang ini" style="display: flex;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="item-row-grid">
+                    <div class="form-group" style="margin-bottom:0; position:relative;">
+                        <label>Nama Barang</label>
+                        <input type="text" id="search_${itemId}" placeholder="Ketik untuk mencari barang..."
+                               oninput="onItemSearch('${itemId}')" autocomplete="off">
+                        <div class="sd-dropdown-list" id="dropdown_${itemId}"></div>
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>Qty</label>
+                        <input type="number" id="qty_${itemId}" min="1" value="1"
+                               oninput="onItemQtyChange('${itemId}')">
+                    </div>
+                    <div></div>
+                </div>
+                <input type="hidden" id="kode_${itemId}" value="">
+                <div class="item-preview-mini" id="preview_${itemId}" style="display:none;">
+                    <div class="detail"><span>Kode:</span><span id="prevKode_${itemId}">-</span></div>
+                    <div class="detail"><span>Stok Tersedia:</span><span id="prevTersedia_${itemId}">-</span></div>
+                    <div class="detail"><span>Stok Paten:</span><span id="prevPaten_${itemId}">-</span></div>
+                    <div class="detail"><span>Lokasi:</span><span id="prevLokasi_${itemId}">-</span></div>
+                </div>
+                <div class="item-stock-warning" id="warning_${itemId}" style="display:none;">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span id="warningText_${itemId}"></span>
+                </div>
+            `;
+            container.appendChild(row);
+            updateItemCount();
+            
+            // Atur status disabled berdasarkan mode saat ini
+            const searchInput = document.getElementById(`search_${itemId}`);
+            const qtyInput = document.getElementById(`qty_${itemId}`);
+            
+            if (!appState.isEditMode) {
+                // Mode Entry Baru: Enable
+                if (searchInput) searchInput.disabled = false;
+                if (qtyInput) qtyInput.disabled = false;
+                setTimeout(() => { if(searchInput) searchInput.focus(); }, 100);
+            } else {
+                // Mode Edit (tapi belum klik tombol Edit): Disable
+                if (searchInput) searchInput.disabled = true;
+                if (qtyInput) qtyInput.disabled = true;
+            }
+        }
+
+        function removeItemRow(itemId) {
+            const row = document.getElementById(`row_${itemId}`);
+            if (row) { row.remove(); delete appState.itemData[itemId]; updateItemCount(); renumberItems(); }
+        }
+
+        function renumberItems() {
+            const rows = document.querySelectorAll('.item-row');
+            rows.forEach((row, index) => {
+                const numEl = row.querySelector('.item-number');
+                const strongEl = row.querySelector('.item-row-header strong');
+                if (numEl) numEl.textContent = index + 1;
+                if (strongEl) strongEl.textContent = `Barang #${index + 1}`;
+            });
+        }
+
+        function updateItemCount() {
+            const count = Object.keys(appState.itemData).length;
+            document.getElementById('itemCountBadge').textContent = `${count} item${count > 1 ? 's' : ''}`;
+        }
+
+        function onItemSearch(itemId) {
+            const input = document.getElementById(`search_${itemId}`);
+            if (!input || input.disabled) return;
+            const dropdown = document.getElementById(`dropdown_${itemId}`);
+            const query = input.value.toLowerCase().trim();
+            dropdown.innerHTML = '';
+            if (query.length === 0) { dropdown.classList.remove('show'); return; }
+            const filtered = appState.namaBarangList.filter(item =>
+                item.nama.toLowerCase().includes(query) || item.kode.toLowerCase().includes(query)
+            ).slice(0, 20);
+            if (filtered.length > 0) {
+                filtered.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'dropdown-item';
+                    div.innerHTML = `<span style="color:var(--primary);font-weight:600;">${item.kode}</span> ${item.nama} <span style="color:var(--text-light);font-size:0.75rem;float:right;">Stok: ${item.tersedia}</span>`;
+                    div.onclick = () => selectItemForInput(itemId, item);
+                    dropdown.appendChild(div);
+                });
+                dropdown.classList.add('show');
+            } else {
+                dropdown.innerHTML = '<div class="dropdown-item" style="color:var(--text-light);cursor:default;">Barang tidak ditemukan</div>';
+                dropdown.classList.add('show');
+            }
+        }
+
+        function selectItemForInput(itemId, item, isLoadFromSearch = false) {
+            const input = document.getElementById(`search_${itemId}`);
+            const kodeInput = document.getElementById(`kode_${itemId}`);
+            const dropdown = document.getElementById(`dropdown_${itemId}`);
+            const preview = document.getElementById(`preview_${itemId}`);
+            if (!input || !kodeInput || !preview) return;
+            input.value = item.nama;
+            kodeInput.value = item.kode;
+            if (!isLoadFromSearch && dropdown) dropdown.classList.remove('show');
+            const existingRowIndex = appState.itemData[itemId] ? appState.itemData[itemId]._rowIndex : null;
+            appState.itemData[itemId] = {
+                kodeBarang: item.kode, namaBarang: item.nama,
+                qty: parseInt(document.getElementById(`qty_${itemId}`)?.value) || 1,
+                tersedia: item.tersedia, stokPaten: item.stokPaten,
+                lokasi: item.lokasi, _rowIndex: existingRowIndex
+            };
+            preview.style.display = 'block';
+            document.getElementById(`prevKode_${itemId}`).textContent = item.kode;
+            document.getElementById(`prevTersedia_${itemId}`).textContent = item.tersedia;
+            document.getElementById(`prevPaten_${itemId}`).textContent = item.stokPaten;
+            document.getElementById(`prevLokasi_${itemId}`).textContent = item.lokasi || '-';
+            updateItemWarning(itemId);
+        }
+
+        function onItemQtyChange(itemId) {
+            if (appState.itemData[itemId]) {
+                appState.itemData[itemId].qty = parseInt(document.getElementById(`qty_${itemId}`)?.value) || 1;
+                updateItemWarning(itemId);
+            }
+        }
+
+        function updateItemWarning(itemId) {
+            const item = appState.itemData[itemId];
+            if (!item || !item.kodeBarang) return;
+            const kodeMutasi = parseInt(document.getElementById('entryKodeMutasi')?.value) || 0;
+            const warning = document.getElementById(`warning_${itemId}`);
+            const warningText = document.getElementById(`warningText_${itemId}`);
+            if (!warning || !warningText) return;
+            if (kodeMutasi === 2 || kodeMutasi === 3 || kodeMutasi === 4) {
+                const afterQty = item.tersedia - item.qty;
+                if (afterQty < 0) {
+                    warning.style.display = 'flex';
+                    warningText.textContent = `STOK TIDAK CUKUP! Tersedia ${item.tersedia}, diminta ${item.qty}.`;
+                } else if (afterQty < item.stokPaten && item.stokPaten > 0) {
+                    warning.style.display = 'flex';
+                    warningText.textContent = `Stok akan jadi ${afterQty} (di bawah minimum ${item.stokPaten}). Perlu beli baru!`;
+                } else {
+                    warning.style.display = 'none';
+                }
+            } else {
+                warning.style.display = 'none';
+            }
+        }
+
+        function updateAllItemWarnings() {
+            Object.keys(appState.itemData).forEach(itemId => updateItemWarning(itemId));
+        }
+
+        document.addEventListener('click', function(e) {
+            document.querySelectorAll('.sd-dropdown-list').forEach(dd => {
+                const parentRow = dd.closest('.item-row');
+                if (parentRow && !parentRow.contains(e.target)) dd.classList.remove('show');
+            });
+        });
+
+        // ============================================
+        // MASTER BARANG
+        // ============================================
+        async function loadMasterBarang() {
+            showLoading();
+            try {
+                const data = await callServer('getMasterBarang');
+                hideLoading();
+                appState.masterBarang = data;
+                renderMasterBarang(data);
+            } catch (error) {
+                hideLoading();
+                showToast('Gagal memuat master barang', 'error');
+            }
+        }
+
+        function renderMasterBarang(data) {
+            document.getElementById('masterCount').textContent = `${data.length} items`;
+            const tbody = document.getElementById('masterBarangTable');
+            if (!data || data.length === 0) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Tidak ada data</td></tr>'; return; }
+            tbody.innerHTML = data.map(item => {
+                const tersedia = parseInt(item['Tersedia']) || 0;
+                const paten = parseInt(item['Stok Paten']) || 0;
+                let statusBadge = paten > 0 && tersedia < paten ? '<span class="badge badge-danger">Stok Rendah</span>' : tersedia === 0 ? '<span class="badge badge-warning">Habis</span>' : '<span class="badge badge-success">OK</span>';
+                return `<tr><td><strong>${item['Kode Barang'] || '-'}</strong></td><td>${item['Nama Barang'] || '-'}</td><td>${item['Lokasi Barang'] || '-'}</td><td><strong>${tersedia}</strong></td><td>${paten}</td><td>${statusBadge}</td></tr>`;
+            }).join('');
+        }
+
+        function filterMasterBarang() {
+            const search = document.getElementById('searchMaster').value.toLowerCase();
+            const filtered = appState.masterBarang.filter(item =>
+                (item['Kode Barang'] || '').toLowerCase().includes(search) ||
+                (item['Nama Barang'] || '').toLowerCase().includes(search) ||
+                (item['Lokasi Barang'] || '').toLowerCase().includes(search)
+            );
+            renderMasterBarang(filtered);
+        }
+
+        // ============================================
+        // STOCK GUDANG
+        // ============================================
+        async function loadStockGudang() {
+            showLoading();
+            try {
+                const data = await callServer('getStockGudang');
+                hideLoading();
+                appState.stockGudang = data;
+                renderStockGudang(data);
+            } catch (error) {
+                hideLoading();
+                showToast('Gagal memuat stock gudang', 'error');
+            }
+        }
+
+        function renderStockGudang(data) {
+            document.getElementById('stockCount').textContent = `${data.length} items`;
+            const tbody = document.getElementById('stockGudangTable');
+            if (!data || data.length === 0) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Tidak ada data</td></tr>'; return; }
+            tbody.innerHTML = data.map(item => `
+                <tr>
+                    <td><strong>${item['Nama Barang'] || '-'}</strong></td>
+                    <td>${item['Spec. Note'] || '-'}</td>
+                    <td><strong>${item['Stok Barang'] || 0}</strong></td>
+                    <td><span class="badge badge-success">${item['Berfungsi'] || 0}</span></td>
+                    <td><span class="badge badge-warning">${item['Rusak masih di it location'] || 0}</span></td>
+                    <td><span class="badge badge-danger">${item['Rusak sudah kirim asset'] || 0}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        function filterStockGudang() {
+            const search = document.getElementById('searchStock').value.toLowerCase();
+            const filtered = appState.stockGudang.filter(item =>
+                (item['Nama Barang'] || '').toLowerCase().includes(search) ||
+                (item['Spec. Note'] || '').toLowerCase().includes(search)
+            );
+            renderStockGudang(filtered);
+        }
+
+        // ============================================
+        // STOCK OPNAME
+        // ============================================
+        async function loadStockOpname() {
+            showLoading();
+            try {
+                const lokasiList = await callServer('getLokasiList');
+                hideLoading();
+                const select = document.getElementById('opnameLokasi');
+                select.innerHTML = '<option value="">-- Pilih Lokasi --</option>';
+                lokasiList.forEach(lok => {
+                    const option = document.createElement('option');
+                    option.value = lok; option.textContent = lok;
+                    select.appendChild(option);
+                });
+                document.getElementById('opnameTableBody').innerHTML = '<tr><td colspan="9" style="text-align:center;">Pilih lokasi terlebih dahulu</td></tr>';
+                document.getElementById('btnExport').disabled = true;
+                document.getElementById('btnSaveOpname').style.display = 'none';
+                document.getElementById('opnameAlert').style.display = 'block';
+                document.getElementById('opnameFilterBar').style.display = 'none';
+                appState.opnameData = [];
+            } catch (error) {
+                hideLoading();
+                showToast('Gagal memuat daftar lokasi', 'error');
+            }
+        }
+
+        async function onLokasiChange() {
+            const lokasi = document.getElementById('opnameLokasi').value;
+            if (!lokasi) {
+                document.getElementById('opnameTableBody').innerHTML = '<tr><td colspan="9" style="text-align:center;">Pilih lokasi terlebih dahulu</td></tr>';
+                document.getElementById('btnExport').disabled = true;
+                document.getElementById('btnSaveOpname').style.display = 'none';
+                document.getElementById('opnameAlert').style.display = 'block';
+                document.getElementById('opnameFilterBar').style.display = 'none';
+                appState.opnameData = [];
+                return;
+            }
+            showLoading();
+            try {
+                const data = await callServer('getStockOpname', lokasi);
+                hideLoading();
+                if (!data || data.length === 0) {
+                    document.getElementById('opnameTableBody').innerHTML = '<tr><td colspan="9" style="text-align:center;">Tidak ada barang di lokasi ini</td></tr>';
+                    document.getElementById('btnSaveOpname').style.display = 'none';
+                    document.getElementById('opnameFilterBar').style.display = 'none';
+                    appState.opnameData = [];
+                    return;
+                }
+                appState.opnameData = data;
+                document.getElementById('btnExport').disabled = false;
+                document.getElementById('btnSaveOpname').style.display = 'inline-flex';
+                document.getElementById('opnameAlert').style.display = 'none';
+                document.getElementById('opnameFilterBar').style.display = 'flex';
+                document.getElementById('opnameFilterStatus').value = 'belum';
+                applyOpnameFilter();
+            } catch (error) {
+                hideLoading();
+                showToast('Gagal memuat data opname: ' + error, 'error');
+            }
+        }
+
+        function applyOpnameFilter() {
+            const filterVal = document.getElementById('opnameFilterStatus').value;
+            let filtered;
+            if (filterVal === 'belum') filtered = appState.opnameData.filter(item => !item.isOpnameDone);
+            else if (filterVal === 'sudah') filtered = appState.opnameData.filter(item => item.isOpnameDone);
+            else filtered = appState.opnameData;
+            renderOpnameTable(filtered);
+            updateOpnameSummary();
+        }
+
+        function updateOpnameSummary() {
+            const total = appState.opnameData.length;
+            const sudah = appState.opnameData.filter(i => i.isOpnameDone).length;
+            const belum = total - sudah;
+            document.getElementById('opnameSummary').innerHTML = `
+                <span class="sum-item badge-success" style="background:#e8f5e9;color:#2e7d32;">&#10003; Sudah: ${sudah}</span>
+                <span class="sum-item badge-warning" style="background:#fff8e1;color:#f57f17;">&#9632; Belum: ${belum}</span>
+                <span class="sum-item badge-info" style="background:#e3f2fd;color:#0277bd;">Total: ${total}</span>
+            `;
+        }
+
+        function renderOpnameTable(data) {
+            const tbody = document.getElementById('opnameTableBody');
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color: var(--text-light); padding: 24px;">Tidak ada barang dengan status ini</td></tr>';
+                return;
+            }
+            tbody.innerHTML = data.map(item => {
+                let statusFisik = '<span class="badge badge-success">OK</span>';
+                if (item.outstanding > 0) statusFisik = '<span class="badge badge-warning">Ada Pinjaman</span>';
+                else if (item.tersedia <= 0) statusFisik = '<span class="badge badge-danger">Habis</span>';
+                else if (item.stokPaten > 0 && item.tersedia < item.stokPaten) statusFisik = '<span class="badge badge-danger">Stok Rendah</span>';
+                const selectedBelum = item.isOpnameDone ? '' : 'selected';
+                const selectedSudah = item.isOpnameDone ? 'selected' : '';
+                let dateInfo = item.lastOpnameDate ? `<br><small style="color:#757575">Terakhir: ${item.lastOpnameDate}</small>` : '';
+                return `
+                    <tr data-kode="${item.kode}">
+                        <td><strong>${item.kode}</strong></td>
+                        <td>${item.nama}</td>
+                        <td>${item.lokasi}</td>
+                        <td><strong>${item.tersedia}</strong></td>
+                        <td><span class="badge badge-danger">${item.rusak}</span></td>
+                        <td><span class="badge badge-dark">${item.permanen}</span></td>
+                        <td><span class="badge badge-warning">${item.outstanding}</span></td>
+                        <td>${statusFisik}</td>
+                        <td>
+                            <select class="opname-status-select" data-kode="${item.kode}" style="padding:4px; border-radius:4px; border:1px solid #ccc;">
+                                <option value="Belum" ${selectedBelum}>Belum Teropname</option>
+                                <option value="Sudah" ${selectedSudah}>Sudah Teropname</option>
+                            </select>
+                            ${dateInfo}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        async function saveOpnameStatus() {
+            const lokasi = document.getElementById('opnameLokasi').value;
+            if (!lokasi) { showToast('Pilih lokasi dulu!', 'warning'); return; }
+            const rows = document.querySelectorAll('#opnameTableBody tr');
+            const itemsToUpdate = [];
+            rows.forEach(row => {
+                const kode = row.getAttribute('data-kode');
+                if (kode) {
+                    const select = row.querySelector('.opname-status-select');
+                    if (select && select.value === 'Sudah') itemsToUpdate.push({ kode: kode });
+                }
+            });
+            if (itemsToUpdate.length === 0) { showToast('Tidak ada barang yang dipilih "Sudah Teropname".', 'warning'); return; }
+            if (!confirm(`Anda akan menandai ${itemsToUpdate.length} barang sebagai "Sudah Teropname" per hari ini. Lanjutkan?`)) return;
+            showLoading();
+            try {
+                const result = await callServer('saveStockOpnameStatus', itemsToUpdate);
+                hideLoading();
+                if (result.success) {
+                    showToast(result.message, 'success');
+                    const updatedKodes = new Set(itemsToUpdate.map(i => i.kode));
+                    const today = new Date();
+                    const dateStr = `${today.getDate()}/${today.getMonth()+1}/${today.getFullYear()}`;
+                    appState.opnameData = appState.opnameData.map(item => {
+                        if (updatedKodes.has(item.kode)) return { ...item, isOpnameDone: true, lastOpnameDate: dateStr };
+                        return item;
+                    });
+                    document.getElementById('opnameFilterStatus').value = 'belum';
+                    applyOpnameFilter();
+                } else {
+                    showToast(result.message, 'error');
+                }
+            } catch (error) {
+                hideLoading();
+                showToast('Gagal menyimpan: ' + error, 'error');
+            }
+        }
+
+        async function exportToExcel() {
+            const lokasi = document.getElementById('opnameLokasi').value;
+            if (!lokasi) { showToast('Pilih lokasi dulu!', 'warning'); return; }
+            showLoading();
+            try {
+                const result = await callServer('exportStockOpnameToExcel', lokasi);
+                hideLoading();
+                if (result.success && result.data) {
+                    const worksheet = XLSX.utils.json_to_sheet(result.data, {
+                        header: ['kode', 'nama', 'lokasi', 'tersedia', 'stokPaten', 'rusak', 'permanen', 'outstanding', 'status']
+                    });
+                    const range = XLSX.utils.decode_range(worksheet['!ref']);
+                    for(let C = range.s.c; C <= range.e.c; ++C) {
+                        const address = XLSX.utils.encode_col(C) + "1";
+                        if(!worksheet[address]) continue;
+                        const headers = ['Kode', 'Nama', 'Lokasi', 'Tersedia', 'Paten', 'Rusak', 'Permanen', 'Dipinjam', 'Status'];
+                        worksheet[address].v = headers[C];
+                    }
+                    const workbook = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(workbook, worksheet, "Stock Opname");
+                    XLSX.writeFile(workbook, `StockOpname_${lokasi}.xlsx`);
+                    showToast('File Excel berhasil didownload!', 'success');
+                } else {
+                    showToast(result.message || 'Gagal export', 'error');
+                }
+            } catch (error) {
+                hideLoading();
+                showToast('Gagal export: ' + error, 'error');
+            }
+        }
+
+        // ============================================
+        // TRANSAKSI
+        // ============================================
+        async function loadTransaksi() {
+            showLoading();
+            try {
+                const data = await callServer('getDataEntry');
+                hideLoading();
+                appState.dataEntry = data;
+                renderTransaksi(data);
+            } catch (error) {
+                hideLoading();
+                showToast('Gagal memuat transaksi', 'error');
+            }
+        }
+
+        function renderTransaksi(data) {
+            document.getElementById('transaksiCount').textContent = `${data.length} transaksi`;
+            const tbody = document.getElementById('transaksiTable');
+            if (!data || data.length === 0) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Belum ada transaksi</td></tr>'; return; }
+            const reversed = [...data].reverse();
+            tbody.innerHTML = reversed.map(t => `
+                <tr>
+                    <td>${formatDate(t['Tanggal'])}</td>
+                    <td>${t['Nomor Tiket/PO'] || '-'}</td>
+                    <td>${t['Nama Peminjam/Nama PO'] || '-'}</td>
+                    <td><strong>${t['Kode Barang'] || '-'}</strong></td>
+                    <td>${t['Nama Barang'] || '-'}</td>
+                    <td><strong>${t['Qty'] || '-'}</strong></td>
+                    <td>${getMutasiBadge(t['Kode Mutasi'])}</td>
+                    <td>${t['Keterangan'] || '-'}</td>
+                </tr>
+            `).join('');
+        }
+
+        function filterTransaksi() {
+            const search = document.getElementById('searchTransaksi').value.toLowerCase();
+            const filtered = appState.dataEntry.filter(t =>
+                (t['Kode Barang'] || '').toLowerCase().includes(search) ||
+                (t['Nama Barang'] || '').toLowerCase().includes(search) ||
+                (t['Keterangan'] || '').toLowerCase().includes(search) ||
+                (t['Nama Peminjam/Nama PO'] || '').toLowerCase().includes(search)
+            );
+            renderTransaksi(filtered);
+        }
+
+        // ============================================
+        // HELPERS
+        // ============================================
+        function getMutasiBadge(kode) {
+            const n = parseInt(kode);
+            switch (n) {
+                case 1: return '<span class="badge badge-info">Masuk Peminjaman</span>';
+                case 2: return '<span class="badge badge-warning">Keluar</span>';
+                case 3: return '<span class="badge badge-danger">Rusak</span>';
+                case 4: return '<span class="badge badge-danger">Permanen</span>';
+                case 5: return '<span class="badge badge-success">Masuk Baru</span>';
+                default: return '<span class="badge badge-primary">-</span>';
+            }
+        }
+
+        function formatDate(d) { if (!d) return '-'; return d; }
+
+        function showToast(msg, type) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.className = `toast toast-${type} show`;
+            setTimeout(() => toast.classList.remove('show'), 3500);
+        }
+
+        function showLoading() { document.getElementById('loading').classList.add('active'); }
+        function hideLoading() { document.getElementById('loading').classList.remove('active'); }
+
+        document.getElementById('loginPassword').addEventListener('keypress', e => { if (e.key === 'Enter') handleLogin(); });
+        document.getElementById('loginUsername').addEventListener('keypress', e => { if (e.key === 'Enter') handleLogin(); });
+    </script>
+</body>
+</html>
