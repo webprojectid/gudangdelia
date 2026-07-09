@@ -629,9 +629,12 @@
             document.getElementById('btnSubmit').disabled = !enable;
             document.getElementById('btnAddItem').disabled = !enable;
             
-            // Update tombol remove di semua item row
-            document.querySelectorAll('.btn-remove-item').forEach(btn => {
-                btn.style.display = enable ? 'flex' : 'none';
+            // Update status input di dalam item rows
+            Object.keys(appState.itemData).forEach(itemId => {
+                const searchInput = document.getElementById(`search_${itemId}`);
+                const qtyInput = document.getElementById(`qty_${itemId}`);
+                if (searchInput) searchInput.disabled = !enable;
+                if (qtyInput) qtyInput.disabled = !enable;
             });
         }
 
@@ -715,7 +718,6 @@
             const container = document.getElementById('itemsContainer');
             const itemNumber = Object.keys(appState.itemData).length;
             
-            // PERBAIKAN: Hapus atribut 'disabled' dari HTML template
             const row = document.createElement('div');
             row.className = 'item-row';
             row.id = `row_${itemId}`;
@@ -725,7 +727,7 @@
                         <div class="item-number">${itemNumber}</div>
                         <strong style="font-size:0.85rem;">Barang #${itemNumber}</strong>
                     </div>
-                    <button type="button" class="btn-remove-item" onclick="removeItemRow('${itemId}')" title="Hapus barang ini" style="display: ${appState.isEditMode ? 'flex' : 'none'};">
+                    <button type="button" class="btn-remove-item" onclick="removeItemRow('${itemId}')" title="Hapus barang ini" style="display: flex;">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
@@ -758,18 +760,17 @@
             container.appendChild(row);
             updateItemCount();
             
-            // LOGIC BARU: Atur status disabled berdasarkan mode saat ini
+            // Atur status disabled berdasarkan mode saat ini
+            const searchInput = document.getElementById(`search_${itemId}`);
+            const qtyInput = document.getElementById(`qty_${itemId}`);
+            
             if (!appState.isEditMode) {
-                // Jika mode entry baru, pastikan enabled
-                const searchInput = document.getElementById(`search_${itemId}`);
-                const qtyInput = document.getElementById(`qty_${itemId}`);
+                // Mode Entry Baru: Enable
                 if (searchInput) searchInput.disabled = false;
                 if (qtyInput) qtyInput.disabled = false;
                 setTimeout(() => { if(searchInput) searchInput.focus(); }, 100);
             } else {
-                // Jika mode edit, pastikan disabled (karena form utama juga disabled sampai tombol Edit ditekan)
-                const searchInput = document.getElementById(`search_${itemId}`);
-                const qtyInput = document.getElementById(`qty_${itemId}`);
+                // Mode Edit (tapi belum klik tombol Edit): Disable
                 if (searchInput) searchInput.disabled = true;
                 if (qtyInput) qtyInput.disabled = true;
             }
