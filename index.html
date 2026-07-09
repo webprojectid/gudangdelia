@@ -690,17 +690,34 @@
         }
 
         function resetForm() {
-            document.getElementById('entryForm').reset();
-            document.getElementById('entryTanggal').value = new Date().toISOString().split('T')[0];
-            appState.itemCounter = 0;
-            appState.itemData = {};
-            document.getElementById('itemsContainer').innerHTML = '';
-            if (!appState.isEditMode) {
-                toggleFormInputs(true);
-                document.getElementById('btnSubmitText').textContent = 'Simpan Transaksi';
-            }
-            addItemRow();
+    document.getElementById('entryForm').reset();
+    document.getElementById('entryTanggal').value = new Date().toISOString().split('T')[0];
+    appState.itemCounter = 0;
+    appState.itemData = {};
+    document.getElementById('itemsContainer').innerHTML = '';
+    
+    if (!appState.isEditMode) {
+        toggleFormInputs(true);
+        document.getElementById('btnSubmitText').textContent = 'Simpan Transaksi';
+    } else {
+        toggleFormInputs(false);
+    }
+    
+    addItemRow();
+    
+    // PERBAIKAN: Paksa enable input pada item barusan dibuat jika bukan mode edit
+    if (!appState.isEditMode) {
+        const itemIds = Object.keys(appState.itemData);
+        if (itemIds.length > 0) {
+            const lastItemId = itemIds[itemIds.length - 1];
+            const searchInput = document.getElementById(`search_${lastItemId}`);
+            const qtyInput = document.getElementById(`qty_${lastItemId}`);
+            
+            if (searchInput) searchInput.disabled = false;
+            if (qtyInput) qtyInput.disabled = false;
         }
+    }
+}
 
         // ============================================
         // MULTI-ITEM HELPERS
