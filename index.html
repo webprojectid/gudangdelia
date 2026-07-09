@@ -7,8 +7,6 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <style>
-        /* semua CSS sama seperti sebelumnya, saya tidak tulis ulang agar ringkas, 
-           tapi Anda bisa copy dari file sebelumnya. Saya akan sertakan di bawah */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
             --primary: #1a237e; --primary-light: #3949ab; --primary-dark: #0d1442;
@@ -26,7 +24,6 @@
         .login-box .error-msg { color: var(--danger); margin-top: 12px; font-size: 0.85rem; min-height: 20px; }
         .form-group { margin-bottom: 20px; text-align: left; }
         .form-group label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 0.85rem; }
-        .form-group label .hint { color: var(--text-light); font-weight: 400; font-size: 0.75rem; }
         .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px 16px; border: 2px solid var(--border); border-radius: 8px; font-size: 0.9rem; outline: none; transition: all 0.3s; font-family: inherit; }
         .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(26,35,126,0.1); }
         .form-group input[readonly], .form-group input:disabled, .form-group select:disabled, .form-group textarea:disabled { background: #f5f5f5; color: #757575; cursor: not-allowed; }
@@ -96,12 +93,6 @@
         .low-stock-item .stock-info { text-align: right; }
         .low-stock-item .stock-info .current { font-size: 1.1rem; font-weight: bold; color: var(--danger); }
         .low-stock-item .stock-info .minimum { font-size: 0.75rem; color: var(--text-light); }
-        .item-preview { background: #f8f9fa; padding: 16px; border-radius: 8px; margin-top: 12px; border-left: 4px solid var(--primary); }
-        .item-preview h4 { font-size: 0.9rem; color: var(--primary); margin-bottom: 10px; }
-        .item-preview .detail { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.8rem; }
-        .item-preview .detail span:first-child { color: var(--text-light); }
-        .item-preview .detail span:last-child { font-weight: 600; }
-        .stock-warning { background: #fff3e0; border: 1px solid #ffcc02; padding: 10px 16px; border-radius: 8px; margin-top: 10px; font-size: 0.8rem; color: #e65100; display: flex; align-items: center; gap: 8px; }
         .search-box { position: relative; margin-bottom: 16px; }
         .search-box input { width: 100%; padding: 12px 16px 12px 40px; border: 2px solid var(--border); border-radius: 8px; font-size: 0.9rem; outline: none; }
         .search-box input:focus { border-color: var(--primary); }
@@ -151,6 +142,9 @@
         .opname-summary { display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
         .opname-summary .sum-item { padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
         .menu-toggle { display: none; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--primary); }
+        /* Config banner */
+        .config-banner { background: #fff3e0; border: 2px solid var(--accent); border-radius: 8px; padding: 16px 20px; margin-bottom: 20px; font-size: 0.9rem; color: #e65100; display: flex; align-items: center; gap: 12px; }
+        .config-banner code { background: rgba(0,0,0,0.08); padding: 2px 8px; border-radius: 4px; font-size: 0.85rem; }
         @media (max-width: 768px) {
             .menu-toggle { display: block; }
             .sidebar { transform: translateX(-100%); }
@@ -159,7 +153,6 @@
             .form-grid { grid-template-columns: 1fr; }
             .stats-grid { grid-template-columns: 1fr 1fr; }
             .item-row-grid { grid-template-columns: 1fr; }
-            .item-row-grid .btn-remove-item { align-self: flex-end; }
         }
     </style>
 </head>
@@ -360,8 +353,6 @@
                                 </button>
                             </div>
                         </div>
-
-                        <!-- FILTER BAR -->
                         <div class="opname-filter-bar" id="opnameFilterBar" style="display:none;">
                             <label><i class="fas fa-filter"></i> Tampilkan:</label>
                             <select id="opnameFilterStatus" onchange="applyOpnameFilter()">
@@ -371,18 +362,13 @@
                             </select>
                             <div class="opname-summary" id="opnameSummary"></div>
                         </div>
-
                         <div id="opnameAlert" class="alert alert-warning" style="display:none;">
                             <i class="fas fa-info-circle"></i> Pilih lokasi untuk melihat data stock opname.
                         </div>
                         <div class="table-container" style="max-height: 600px; overflow-y: auto;">
                             <table>
                                 <thead>
-                                    <tr>
-                                        <th>Kode</th><th>Nama Barang</th><th>Lokasi</th>
-                                        <th>Tersedia</th><th>Rusak</th><th>Permanen</th>
-                                        <th>Dipinjam</th><th>Status Fisik</th><th>Status Opname</th>
-                                    </tr>
+                                    <tr><th>Kode</th><th>Nama Barang</th><th>Lokasi</th><th>Tersedia</th><th>Rusak</th><th>Permanen</th><th>Dipinjam</th><th>Status Fisik</th><th>Status Opname</th></tr>
                                 </thead>
                                 <tbody id="opnameTableBody">
                                     <tr><td colspan="9" style="text-align:center;">Pilih lokasi terlebih dahulu</td></tr>
@@ -413,9 +399,14 @@
 
     <script>
         // ============================================
-        // API CONFIGURATION - GANTI DENGAN URL WEB APP ANDA
+        // ⚙️  KONFIGURASI — GANTI URL DI BAWAH INI
         // ============================================
-        const API_BASE = 'https://script.google.com/macros/s/AKfycbxUg5ZMAjzaX-YfA0C_4sFW6hPxvv8TFlKg1QPQB9tNPSnz-8QoDD0picjeKtLlifXxng/exec'; // <-- GANTI DENGAN URL ANDA
+        // Setelah deploy Apps Script sebagai Web App:
+        // Extensions > Apps Script > Deploy > New Deployment
+        // Type: Web App | Execute as: Me | Access: Anyone
+        // Copy URL-nya dan paste di sini ↓
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzjGmFB1L9EBuMO3BMpNTYCe7T0NLeVUB85PApS5cA17UL2Fg0qDc7bblTcS8CAJm6tXA/exec';
+        // ============================================
 
         // ============================================
         // APP STATE
@@ -433,30 +424,18 @@
         };
 
         // ============================================
-        // SERVER CALL via REST API (dengan error handling lebih baik)
+        // SERVER CALL — fetch() ke Apps Script Web App
         // ============================================
-        async function callApi(action, ...args) {
-            try {
-                const response = await fetch(API_BASE, {
-                    method: 'POST',
-                    mode: 'cors',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: action, args: args })
-                });
-
-                if (!response.ok) {
-                    // Coba baca pesan error dari server jika ada
-                    let errorText = await response.text();
-                    throw new Error(`HTTP ${response.status}: ${errorText}`);
-                }
-
-                const data = await response.json();
-                return data;
-            } catch (error) {
-                console.error('API call error:', error);
-                // Lempar error agar bisa ditangkap di fungsi pemanggil
-                throw error;
-            }
+        async function callServer(functionName, ...args) {
+            const response = await fetch(APPS_SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain' },
+                // Content-Type: text/plain dipakai untuk bypass CORS preflight di Apps Script
+                body: JSON.stringify({ function: functionName, args: args })
+            });
+            if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
+            const result = await response.json();
+            return result;
         }
 
         // ============================================
@@ -467,7 +446,7 @@
             const password = document.getElementById('loginPassword').value;
             showLoading();
             try {
-                const result = await callApi('login', username, password);
+                const result = await callServer('login', username, password);
                 hideLoading();
                 if (result.success) {
                     document.getElementById('loginPage').style.display = 'none';
@@ -479,7 +458,7 @@
                 }
             } catch (error) {
                 hideLoading();
-                document.getElementById('loginError').textContent = 'Koneksi error. Pastikan URL API benar dan CORS diizinkan. Detail: ' + error.message;
+                document.getElementById('loginError').textContent = 'Koneksi error. Pastikan URL Apps Script sudah diset dan di-deploy dengan akses "Anyone".';
                 console.error(error);
             }
         }
@@ -513,9 +492,7 @@
             document.getElementById('sidebar').classList.remove('open');
         }
 
-        function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('open');
-        }
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
 
         // ============================================
         // DASHBOARD
@@ -523,7 +500,7 @@
         async function loadDashboard() {
             showLoading();
             try {
-                const data = await callApi('getDashboardData');
+                const data = await callServer('getDashboardData');
                 hideLoading();
                 document.getElementById('stat-totalItems').textContent = data.totalItems || 0;
                 document.getElementById('stat-totalStock').textContent = data.totalStock || 0;
@@ -559,23 +536,23 @@
                 }
             } catch (error) {
                 hideLoading();
-                showToast('Gagal memuat dashboard: ' + error.message, 'error');
+                showToast('Gagal memuat dashboard: ' + error, 'error');
             }
         }
 
         // ============================================
-        // DATA ENTRY (sama seperti sebelumnya, hanya panggil callApi)
+        // DATA ENTRY
         // ============================================
         async function loadDataEntry() {
             showLoading();
             try {
-                const list = await callApi('getNamaBarangList');
+                const list = await callServer('getNamaBarangList');
                 hideLoading();
                 appState.namaBarangList = list;
                 resetToNewEntry();
             } catch (error) {
                 hideLoading();
-                showToast('Gagal memuat data barang: ' + error.message, 'error');
+                showToast('Gagal memuat data barang', 'error');
             }
         }
 
@@ -584,7 +561,7 @@
             if (!ticket) { showToast('Masukkan nomor tiket!', 'warning'); return; }
             showLoading();
             try {
-                const result = await callApi('searchByTicket', ticket);
+                const result = await callServer('searchByTicket', ticket);
                 hideLoading();
                 if (result.success && result.data && result.data.length > 0) {
                     loadTransactionToForm(result.data);
@@ -594,7 +571,7 @@
                 }
             } catch (error) {
                 hideLoading();
-                showToast('Error mencari tiket: ' + error.message, 'error');
+                showToast('Error mencari tiket: ' + error, 'error');
             }
         }
 
@@ -694,9 +671,9 @@
             try {
                 let result;
                 if (appState.isEditMode && appState.editingRowIndices.length > 0) {
-                    result = await callApi('updateDataEntry', batchData);
+                    result = await callServer('updateDataEntry', batchData);
                 } else {
-                    result = await callApi('addDataEntry', batchData);
+                    result = await callServer('addDataEntry', batchData);
                 }
                 hideLoading();
                 if (result.success) {
@@ -708,7 +685,7 @@
                 }
             } catch (error) {
                 hideLoading();
-                showToast('Error: ' + error.message, 'error');
+                showToast('Error: ' + error, 'error');
             }
         }
 
@@ -726,7 +703,7 @@
         }
 
         // ============================================
-        // MULTI-ITEM HELPERS (tidak berubah)
+        // MULTI-ITEM HELPERS
         // ============================================
         function addItemRow() {
             appState.itemCounter++;
@@ -896,13 +873,13 @@
         async function loadMasterBarang() {
             showLoading();
             try {
-                const data = await callApi('getMasterBarang');
+                const data = await callServer('getMasterBarang');
                 hideLoading();
                 appState.masterBarang = data;
                 renderMasterBarang(data);
             } catch (error) {
                 hideLoading();
-                showToast('Gagal memuat master barang: ' + error.message, 'error');
+                showToast('Gagal memuat master barang', 'error');
             }
         }
 
@@ -934,13 +911,13 @@
         async function loadStockGudang() {
             showLoading();
             try {
-                const data = await callApi('getStockGudang');
+                const data = await callServer('getStockGudang');
                 hideLoading();
                 appState.stockGudang = data;
                 renderStockGudang(data);
             } catch (error) {
                 hideLoading();
-                showToast('Gagal memuat stock gudang: ' + error.message, 'error');
+                showToast('Gagal memuat stock gudang', 'error');
             }
         }
 
@@ -970,19 +947,18 @@
         }
 
         // ============================================
-        // STOCK OPNAME (sama seperti sebelumnya)
+        // STOCK OPNAME
         // ============================================
         async function loadStockOpname() {
             showLoading();
             try {
-                const lokasiList = await callApi('getLokasiList');
+                const lokasiList = await callServer('getLokasiList');
                 hideLoading();
                 const select = document.getElementById('opnameLokasi');
                 select.innerHTML = '<option value="">-- Pilih Lokasi --</option>';
                 lokasiList.forEach(lok => {
                     const option = document.createElement('option');
-                    option.value = lok;
-                    option.textContent = lok;
+                    option.value = lok; option.textContent = lok;
                     select.appendChild(option);
                 });
                 document.getElementById('opnameTableBody').innerHTML = '<tr><td colspan="9" style="text-align:center;">Pilih lokasi terlebih dahulu</td></tr>';
@@ -993,7 +969,7 @@
                 appState.opnameData = [];
             } catch (error) {
                 hideLoading();
-                showToast('Gagal memuat daftar lokasi: ' + error.message, 'error');
+                showToast('Gagal memuat daftar lokasi', 'error');
             }
         }
 
@@ -1008,12 +984,10 @@
                 appState.opnameData = [];
                 return;
             }
-
             showLoading();
             try {
-                const data = await callApi('getStockOpname', lokasi);
+                const data = await callServer('getStockOpname', lokasi);
                 hideLoading();
-
                 if (!data || data.length === 0) {
                     document.getElementById('opnameTableBody').innerHTML = '<tr><td colspan="9" style="text-align:center;">Tidak ada barang di lokasi ini</td></tr>';
                     document.getElementById('btnSaveOpname').style.display = 'none';
@@ -1021,35 +995,25 @@
                     appState.opnameData = [];
                     return;
                 }
-
                 appState.opnameData = data;
-
                 document.getElementById('btnExport').disabled = false;
                 document.getElementById('btnSaveOpname').style.display = 'inline-flex';
                 document.getElementById('opnameAlert').style.display = 'none';
                 document.getElementById('opnameFilterBar').style.display = 'flex';
-
                 document.getElementById('opnameFilterStatus').value = 'belum';
                 applyOpnameFilter();
-
             } catch (error) {
                 hideLoading();
-                showToast('Gagal memuat data opname: ' + error.message, 'error');
+                showToast('Gagal memuat data opname: ' + error, 'error');
             }
         }
 
         function applyOpnameFilter() {
             const filterVal = document.getElementById('opnameFilterStatus').value;
             let filtered;
-
-            if (filterVal === 'belum') {
-                filtered = appState.opnameData.filter(item => !item.isOpnameDone);
-            } else if (filterVal === 'sudah') {
-                filtered = appState.opnameData.filter(item => item.isOpnameDone);
-            } else {
-                filtered = appState.opnameData;
-            }
-
+            if (filterVal === 'belum') filtered = appState.opnameData.filter(item => !item.isOpnameDone);
+            else if (filterVal === 'sudah') filtered = appState.opnameData.filter(item => item.isOpnameDone);
+            else filtered = appState.opnameData;
             renderOpnameTable(filtered);
             updateOpnameSummary();
         }
@@ -1071,17 +1035,14 @@
                 tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color: var(--text-light); padding: 24px;">Tidak ada barang dengan status ini</td></tr>';
                 return;
             }
-
             tbody.innerHTML = data.map(item => {
                 let statusFisik = '<span class="badge badge-success">OK</span>';
                 if (item.outstanding > 0) statusFisik = '<span class="badge badge-warning">Ada Pinjaman</span>';
                 else if (item.tersedia <= 0) statusFisik = '<span class="badge badge-danger">Habis</span>';
                 else if (item.stokPaten > 0 && item.tersedia < item.stokPaten) statusFisik = '<span class="badge badge-danger">Stok Rendah</span>';
-
                 const selectedBelum = item.isOpnameDone ? '' : 'selected';
                 const selectedSudah = item.isOpnameDone ? 'selected' : '';
                 let dateInfo = item.lastOpnameDate ? `<br><small style="color:#757575">Terakhir: ${item.lastOpnameDate}</small>` : '';
-
                 return `
                     <tr data-kode="${item.kode}">
                         <td><strong>${item.kode}</strong></td>
@@ -1107,55 +1068,38 @@
         async function saveOpnameStatus() {
             const lokasi = document.getElementById('opnameLokasi').value;
             if (!lokasi) { showToast('Pilih lokasi dulu!', 'warning'); return; }
-
             const rows = document.querySelectorAll('#opnameTableBody tr');
             const itemsToUpdate = [];
-
             rows.forEach(row => {
                 const kode = row.getAttribute('data-kode');
                 if (kode) {
                     const select = row.querySelector('.opname-status-select');
-                    if (select && select.value === 'Sudah') {
-                        itemsToUpdate.push({ kode: kode });
-                    }
+                    if (select && select.value === 'Sudah') itemsToUpdate.push({ kode: kode });
                 }
             });
-
-            if (itemsToUpdate.length === 0) {
-                showToast('Tidak ada barang yang dipilih "Sudah Teropname".', 'warning');
-                return;
-            }
-
+            if (itemsToUpdate.length === 0) { showToast('Tidak ada barang yang dipilih "Sudah Teropname".', 'warning'); return; }
             if (!confirm(`Anda akan menandai ${itemsToUpdate.length} barang sebagai "Sudah Teropname" per hari ini. Lanjutkan?`)) return;
-
             showLoading();
             try {
-                const result = await callApi('saveStockOpnameStatus', itemsToUpdate);
+                const result = await callServer('saveStockOpnameStatus', itemsToUpdate);
                 hideLoading();
-
                 if (result.success) {
                     showToast(result.message, 'success');
-
                     const updatedKodes = new Set(itemsToUpdate.map(i => i.kode));
                     const today = new Date();
                     const dateStr = `${today.getDate()}/${today.getMonth()+1}/${today.getFullYear()}`;
-
                     appState.opnameData = appState.opnameData.map(item => {
-                        if (updatedKodes.has(item.kode)) {
-                            return { ...item, isOpnameDone: true, lastOpnameDate: dateStr };
-                        }
+                        if (updatedKodes.has(item.kode)) return { ...item, isOpnameDone: true, lastOpnameDate: dateStr };
                         return item;
                     });
-
                     document.getElementById('opnameFilterStatus').value = 'belum';
                     applyOpnameFilter();
-
                 } else {
                     showToast(result.message, 'error');
                 }
             } catch (error) {
                 hideLoading();
-                showToast('Gagal menyimpan: ' + error.message, 'error');
+                showToast('Gagal menyimpan: ' + error, 'error');
             }
         }
 
@@ -1164,7 +1108,7 @@
             if (!lokasi) { showToast('Pilih lokasi dulu!', 'warning'); return; }
             showLoading();
             try {
-                const result = await callApi('exportStockOpnameToExcel', lokasi);
+                const result = await callServer('exportStockOpnameToExcel', lokasi);
                 hideLoading();
                 if (result.success && result.data) {
                     const worksheet = XLSX.utils.json_to_sheet(result.data, {
@@ -1186,7 +1130,7 @@
                 }
             } catch (error) {
                 hideLoading();
-                showToast('Gagal export: ' + error.message, 'error');
+                showToast('Gagal export: ' + error, 'error');
             }
         }
 
@@ -1196,13 +1140,13 @@
         async function loadTransaksi() {
             showLoading();
             try {
-                const data = await callApi('getDataEntry');
+                const data = await callServer('getDataEntry');
                 hideLoading();
                 appState.dataEntry = data;
                 renderTransaksi(data);
             } catch (error) {
                 hideLoading();
-                showToast('Gagal memuat transaksi: ' + error.message, 'error');
+                showToast('Gagal memuat transaksi', 'error');
             }
         }
 
@@ -1263,7 +1207,6 @@
         function showLoading() { document.getElementById('loading').classList.add('active'); }
         function hideLoading() { document.getElementById('loading').classList.remove('active'); }
 
-        // Event listeners untuk enter di login
         document.getElementById('loginPassword').addEventListener('keypress', e => { if (e.key === 'Enter') handleLogin(); });
         document.getElementById('loginUsername').addEventListener('keypress', e => { if (e.key === 'Enter') handleLogin(); });
     </script>
