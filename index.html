@@ -7,296 +7,152 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <style>
-        /* ========== RESET & VARIABLES ========== */
-        *{margin:0;padding:0;box-sizing:border-box}
-        :root{
-            --primary:#1a237e;--primary-light:#3949ab;--primary-dark:#0d1442;
-            --accent:#ff6f00;--accent-glow:rgba(255,111,0,0.35);
-            --success:#2e7d32;--danger:#c62828;--warning:#f57f17;--info:#0277bd;
-            --bg:#f0f2f8;--card:rgba(255,255,255,0.92);
-            --text:#1a1a2e;--text-light:#6b7280;--border:rgba(0,0,0,0.07);
-            --shadow:0 2px 12px rgba(0,0,0,0.06);--shadow-lg:0 8px 32px rgba(0,0,0,0.12);
-            --radius:14px;--radius-sm:10px;--radius-xs:8px;
-            --glass:rgba(255,255,255,0.08);--glass-border:rgba(255,255,255,0.15);
-            --transition:0.35s cubic-bezier(.4,0,.2,1);--bounce:0.5s cubic-bezier(.175,.885,.32,1.275);
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #1a237e; --primary-light: #3949ab; --primary-dark: #0d1442;
+            --accent: #ff6f00; --success: #2e7d32; --danger: #c62828;
+            --warning: #f57f17; --info: #0277bd; --bg: #f5f5f5; --card: #ffffff;
+            --text: #212121; --text-light: #757575; --border: #e0e0e0;
+            --shadow: 0 2px 10px rgba(0,0,0,0.08); --shadow-lg: 0 4px 20px rgba(0,0,0,0.12);
         }
-
-        /* ========== CUSTOM SCROLLBAR ========== */
-        ::-webkit-scrollbar{width:5px;height:5px}
-        ::-webkit-scrollbar-track{background:transparent}
-        ::-webkit-scrollbar-thumb{background:rgba(26,35,126,0.18);border-radius:10px}
-        ::-webkit-scrollbar-thumb:hover{background:rgba(26,35,126,0.35)}
-        *{scrollbar-width:thin;scrollbar-color:rgba(26,35,126,0.18) transparent}
-
-        body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.6;overflow-x:hidden}
-
-        /* ========== LOADING & TOAST ========== */
-        .loading{display:none;position:fixed;inset:0;background:rgba(255,255,255,0.6);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);z-index:9998;align-items:center;justify-content:center}
-        .loading.active{display:flex}
-        .spinner{width:42px;height:42px;border:3px solid rgba(26,35,126,0.1);border-top-color:var(--primary);border-radius:50%;animation:spin .7s linear infinite;box-shadow:0 0 24px rgba(26,35,126,0.15)}
-        @keyframes spin{to{transform:rotate(360deg)}}
-
-        .toast{position:fixed;top:24px;right:24px;padding:14px 22px 14px 18px;border-radius:var(--radius-xs);color:#fff;font-weight:500;z-index:9999;transform:translateX(420px);transition:transform .45s var(--bounce);box-shadow:0 8px 30px rgba(0,0,0,0.2);font-size:.88rem;display:flex;align-items:center;gap:10px;border-left:4px solid rgba(255,255,255,0.4);backdrop-filter:blur(12px)}
-        .toast.show{transform:translateX(0)}
-        .toast-success{background:rgba(46,125,50,0.94);border-left-color:#a5d6a7}
-        .toast-error{background:rgba(198,40,40,0.94);border-left-color:#ef9a9a}
-        .toast-warning{background:rgba(245,127,23,0.94);border-left-color:#ffe082}
-        .toast-info{background:rgba(2,119,189,0.94);border-left-color:#81d4fa}
-
-        /* ========== LOGIN PAGE ========== */
-        .login-container{min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;padding:20px;
-            background:linear-gradient(-45deg,#060b2e,#0d1442,#0a2a3c,#071e26,#0d1442);
-            background-size:500% 500%;animation:loginGradient 20s ease infinite}
-        @keyframes loginGradient{
-            0%{background-position:0% 50%}25%{background-position:50% 100%}
-            50%{background-position:100% 50%}75%{background-position:50% 0%}100%{background-position:0% 50%}}
-
-        /* Floating Orbs */
-        .login-orb{position:absolute;border-radius:50%;filter:blur(90px);opacity:.45;pointer-events:none}
-        .orb-1{width:420px;height:420px;background:#ff6f00;top:-120px;left:-80px;animation:orbFloat1 18s ease-in-out infinite}
-        .orb-2{width:350px;height:350px;background:#00838f;bottom:-80px;right:-60px;animation:orbFloat2 22s ease-in-out infinite}
-        .orb-3{width:280px;height:280px;background:#1a237e;top:45%;left:55%;animation:orbFloat3 25s ease-in-out infinite}
-        .orb-4{width:200px;height:200px;background:#00695c;top:15%;right:15%;animation:orbFloat1 20s ease-in-out infinite reverse}
-        @keyframes orbFloat1{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(60px,-40px) scale(1.1)}66%{transform:translate(-40px,50px) scale(.92)}}
-        @keyframes orbFloat2{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(-50px,30px) scale(.9)}66%{transform:translate(40px,-60px) scale(1.08)}}
-        @keyframes orbFloat3{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-30px,-40px) scale(1.12)}}
-
-        /* Glassmorphism Card */
-        .login-box{background:rgba(255,255,255,0.07);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:44px 40px;width:100%;max-width:420px;text-align:center;position:relative;z-index:2;box-shadow:0 8px 40px rgba(0,0,0,0.3),inset 0 1px 0 rgba(255,255,255,0.1);animation:cardAppear .8s var(--bounce)}
-        .login-box::before{content:'';position:absolute;inset:-2px;border-radius:22px;background:linear-gradient(135deg,rgba(255,111,0,0.25),transparent 40%,transparent 60%,rgba(26,35,126,0.25));z-index:-1;filter:blur(8px);opacity:.6}
-        @keyframes cardAppear{from{opacity:0;transform:translateY(30px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
-
-        .login-box .logo{width:76px;height:76px;background:linear-gradient(135deg,var(--accent),#ff8f00);border-radius:50%;margin:0 auto 22px;display:flex;align-items:center;justify-content:center;font-size:1.8rem;color:#fff;box-shadow:0 4px 24px var(--accent-glow);animation:logoPulse 3s ease-in-out infinite}
-        @keyframes logoPulse{0%,100%{box-shadow:0 4px 24px var(--accent-glow)}50%{box-shadow:0 4px 40px rgba(255,111,0,0.5),0 0 0 10px rgba(255,111,0,0)}}
-        .login-box h1{color:#fff;margin-bottom:4px;font-size:1.35rem;font-weight:700;letter-spacing:-.3px}
-        .login-box h2{color:rgba(255,255,255,0.5);font-size:.82rem;margin-bottom:32px;font-weight:400;letter-spacing:.5px}
-        .login-box .error-msg{color:#ff8a80;margin-top:14px;font-size:.82rem;min-height:20px;transition:all .3s}
-
-        /* Login Form Inputs (Dark Glass) */
-        .login-box .form-group label{display:block;margin-bottom:6px;font-weight:600;font-size:.82rem;color:rgba(255,255,255,0.7);text-align:left}
-        .login-box .form-group input{width:100%;padding:13px 16px;border:1px solid rgba(255,255,255,0.15);border-radius:var(--radius-xs);font-size:.9rem;outline:none;transition:all var(--transition);font-family:inherit;background:rgba(255,255,255,0.08);color:#fff}
-        .login-box .form-group input::placeholder{color:rgba(255,255,255,0.35)}
-        .login-box .form-group input:focus{border-color:var(--accent);background:rgba(255,255,255,0.13);box-shadow:0 0 0 3px rgba(255,111,0,0.15),0 0 24px rgba(255,111,0,0.08)}
-        .login-box .btn-primary{background:linear-gradient(135deg,var(--accent),#ff8f00);color:#fff;border:none;padding:13px 24px;border-radius:var(--radius-xs);font-size:.92rem;font-weight:700;cursor:pointer;transition:all var(--transition);width:100%;display:flex;align-items:center;justify-content:center;gap:10px;font-family:inherit;position:relative;overflow:hidden;margin-top:4px}
-        .login-box .btn-primary:hover{background:linear-gradient(135deg,#ff8f00,var(--accent));box-shadow:0 6px 28px var(--accent-glow);transform:translateY(-2px)}
-        .login-box .btn-primary:active{transform:translateY(0);box-shadow:0 2px 12px var(--accent-glow)}
-
-        /* ========== APP LAYOUT ========== */
-        .app-container{display:none}
-        .app-container.active{display:flex}
-
-        /* ========== SIDEBAR ========== */
-        .sidebar{width:260px;background:linear-gradient(180deg,#080d35 0%,#0d1442 40%,#0a1035 100%);color:#fff;min-height:100vh;position:fixed;left:0;top:0;z-index:100;transition:all var(--transition);overflow-y:auto;overflow-x:hidden;box-shadow:4px 0 30px rgba(0,0,0,0.4)}
-        .sidebar::before{content:'';position:absolute;top:0;left:0;right:0;height:180px;background:linear-gradient(180deg,rgba(255,111,0,0.06) 0%,transparent 100%);pointer-events:none;z-index:0}
-        .sidebar::after{content:'';position:absolute;top:0;right:0;width:1px;height:100%;background:linear-gradient(180deg,transparent 10%,rgba(255,111,0,0.2) 50%,transparent 90%);pointer-events:none}
-
-        .sidebar-header{padding:28px 22px 22px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.06);position:relative;z-index:1}
-        .sidebar-header::after{content:'';position:absolute;bottom:-1px;left:18%;right:18%;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);border-radius:1px;opacity:.6}
-        .sidebar-header h2{font-size:1.05rem;font-weight:700;letter-spacing:-.2px}
-        .sidebar-header h2 i{animation:iconFloat 3s ease-in-out infinite;display:inline-block}
-        @keyframes iconFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
-        .sidebar-header p{font-size:.7rem;color:rgba(255,255,255,0.4);margin-top:5px;letter-spacing:.8px;text-transform:uppercase}
-
-        .sidebar-menu{padding:14px 0;position:relative;z-index:1}
-        .menu-item{padding:13px 24px;display:flex;align-items:center;gap:13px;cursor:pointer;transition:all var(--transition);color:rgba(255,255,255,0.55);font-size:.88rem;border-left:3px solid transparent;position:relative}
-        .menu-item:hover{color:rgba(255,255,255,0.9);background:rgba(255,255,255,0.04);border-left-color:rgba(255,111,0,0.3)}
-        .menu-item:hover i{transform:scale(1.12)}
-        .menu-item i{width:20px;text-align:center;transition:transform var(--transition);font-size:.9rem}
-        .menu-item.active{color:#fff;background:linear-gradient(90deg,rgba(255,111,0,0.18) 0%,rgba(255,111,0,0.04) 100%);border-left-color:var(--accent);box-shadow:inset 0 0 20px rgba(255,111,0,0.06),0 0 15px rgba(255,111,0,0.08)}
-        .menu-item.active i{color:var(--accent)}
-
-        /* ========== MAIN CONTENT ========== */
-        .main-content{margin-left:260px;padding:28px;width:calc(100% - 260px);min-height:100vh;position:relative;
-            background:radial-gradient(ellipse at 15% 10%,rgba(26,35,126,0.03) 0%,transparent 50%),
-                        radial-gradient(ellipse at 85% 80%,rgba(255,111,0,0.02) 0%,transparent 50%),
-                        linear-gradient(160deg,#eef0f7 0%,#f3f4f8 40%,#f0f1f6 100%)}
-
-        .top-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:26px;padding-bottom:18px;border-bottom:1px solid var(--border);position:relative}
-        .top-bar::after{content:'';position:absolute;bottom:-1px;left:0;width:50px;height:2px;background:var(--accent);border-radius:1px}
-        .top-bar h1{font-size:1.35rem;color:var(--primary);font-weight:800;letter-spacing:-.5px}
-        .user-info{display:flex;align-items:center;gap:12px}
-        .user-info .avatar{width:38px;height:38px;background:linear-gradient(135deg,var(--primary),var(--primary-light));border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:.85rem;box-shadow:0 2px 10px rgba(26,35,126,0.3);transition:transform var(--transition)}
-        .user-info .avatar:hover{transform:scale(1.1)}
-        .menu-toggle{display:none;background:none;border:none;font-size:1.4rem;cursor:pointer;color:var(--primary);padding:6px;border-radius:var(--radius-xs);transition:all .2s}
-        .menu-toggle:hover{background:rgba(26,35,126,0.08)}
-
-        /* ========== PAGE TRANSITIONS ========== */
-        .page{display:none}
-        .page.active{display:block;animation:pageIn .45s cubic-bezier(.16,1,.3,1)}
-        @keyframes pageIn{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
-
-        /* ========== STATS CARDS ========== */
-        .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:18px;margin-bottom:26px}
-        .stat-card{background:var(--card);padding:22px;border-radius:var(--radius);box-shadow:var(--shadow);display:flex;align-items:center;gap:16px;position:relative;overflow:hidden;transition:all .4s var(--bounce);border:1px solid rgba(0,0,0,0.03)}
-        .stat-card::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;transition:all var(--transition);border-radius:0 2px 2px 0}
-        .stat-card:nth-child(1)::before{background:linear-gradient(180deg,#0277bd,#00bcd4)}
-        .stat-card:nth-child(2)::before{background:linear-gradient(180deg,#2e7d32,#66bb6a)}
-        .stat-card:nth-child(3)::before{background:linear-gradient(180deg,#c62828,#ef5350)}
-        .stat-card:nth-child(4)::before{background:linear-gradient(180deg,#ff6f00,#ffa726)}
-        .stat-card:hover{transform:translateY(-6px);box-shadow:0 14px 40px rgba(0,0,0,0.12)}
-        .stat-card:hover::before{width:5px;box-shadow:0 0 12px currentColor}
-
-        .stat-card .icon{width:52px;height:52px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:1.2rem;color:#fff;position:relative;overflow:hidden;flex-shrink:0}
-        .stat-card .icon.blue{background:linear-gradient(135deg,#0277bd,#00acc1)}
-        .stat-card .icon.green{background:linear-gradient(135deg,#2e7d32,#43a047)}
-        .stat-card .icon.red{background:linear-gradient(135deg,#c62828,#e53935)}
-        .stat-card .icon.orange{background:linear-gradient(135deg,#ff6f00,#fb8c00)}
-        .stat-card .icon::after{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:linear-gradient(45deg,transparent 42%,rgba(255,255,255,0.25) 50%,transparent 58%);animation:iconShimmer 4s infinite}
-        @keyframes iconShimmer{0%{transform:translateX(-100%) rotate(45deg)}100%{transform:translateX(100%) rotate(45deg)}}
-
-        .stat-card .info h3{font-size:1.6rem;font-weight:800;letter-spacing:-.5px;color:var(--text)}
-        .stat-card .info p{font-size:.72rem;color:var(--text-light);font-weight:500;margin-top:2px}
-
-        /* ========== CARDS ========== */
-        .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:22px;overflow:hidden;border:1px solid rgba(0,0,0,0.03);transition:box-shadow var(--transition)}
-        .card:hover{box-shadow:0 4px 20px rgba(0,0,0,0.08)}
-        .card-header{padding:16px 22px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:relative;background:rgba(255,255,255,0.5)}
-        .card-header::after{content:'';position:absolute;bottom:-1px;left:0;width:50px;height:2px;background:var(--accent);border-radius:0 0 2px 0}
-        .card-header h3{font-size:.95rem;display:flex;align-items:center;gap:9px;font-weight:700;color:var(--text)}
-        .card-body{padding:22px}
-
-        /* ========== TABLES ========== */
-        .table-container{overflow-x:auto;border-radius:var(--radius-xs)}
-        table{width:100%;border-collapse:collapse}
-        table th,table td{padding:12px 16px;text-align:left;border-bottom:1px solid var(--border);font-size:.84rem}
-        table th{background:linear-gradient(135deg,#f6f7fb,#eef0f6);font-weight:700;font-size:.72rem;text-transform:uppercase;letter-spacing:.6px;color:var(--text-light);position:sticky;top:0;z-index:1}
-        table tbody tr{transition:all .2s}
-        table tbody tr:hover{background:rgba(26,35,126,0.03)}
-        table tbody tr:last-child td{border-bottom:none}
-
-        /* ========== FORMS ========== */
-        .form-group{margin-bottom:20px;text-align:left}
-        .form-group label{display:block;margin-bottom:6px;font-weight:600;font-size:.82rem;color:var(--text)}
-        .form-group input,.form-group select,.form-group textarea{width:100%;padding:11px 15px;border:2px solid var(--border);border-radius:var(--radius-xs);font-size:.88rem;outline:none;transition:all var(--transition);font-family:inherit;background:#fff;color:var(--text)}
-        .form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(26,35,126,0.08),0 2px 16px rgba(26,35,126,0.06)}
-        .form-group input[readonly],.form-group input:disabled,.form-group select:disabled,.form-group textarea:disabled{background:#f5f6fa;color:var(--text-light);cursor:not-allowed;border-color:var(--border)}
-        .form-group input[readonly]:not(:disabled){font-weight:700;color:var(--primary);background:rgba(26,35,126,0.03)}
-        .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-        .form-grid .full-width{grid-column:1/-1}
-
-        /* ========== BUTTONS ========== */
-        .btn{padding:11px 22px;border:none;border-radius:var(--radius-xs);font-size:.88rem;font-weight:600;cursor:pointer;transition:all var(--transition);display:inline-flex;align-items:center;gap:8px;font-family:inherit;position:relative;overflow:hidden}
-        .btn-primary{background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff}
-        .btn-primary:hover{box-shadow:0 4px 18px rgba(26,35,126,0.3);transform:translateY(-2px)}
-        .btn-success{background:linear-gradient(135deg,var(--success),#388e3c);color:#fff}
-        .btn-success:hover{box-shadow:0 4px 18px rgba(46,125,50,0.3);transform:translateY(-2px)}
-        .btn-danger{background:linear-gradient(135deg,var(--danger),#d32f2f);color:#fff}
-        .btn-danger:hover{box-shadow:0 4px 18px rgba(198,40,40,0.3);transform:translateY(-2px)}
-        .btn-warning{background:linear-gradient(135deg,var(--warning),#f9a825);color:#fff}
-        .btn-warning:hover{box-shadow:0 4px 18px rgba(245,127,23,0.3);transform:translateY(-2px)}
-        .btn-info{background:linear-gradient(135deg,var(--info),#0288d1);color:#fff}
-        .btn-info:hover{box-shadow:0 4px 18px rgba(2,119,189,0.3);transform:translateY(-2px)}
-        .btn:active{transform:translateY(0) scale(.97)!important}
-        .btn-sm{padding:8px 15px;font-size:.78rem}
-        .btn-block{width:100%;justify-content:center}
-        .btn:disabled{opacity:.5;cursor:not-allowed;transform:none!important;box-shadow:none!important}
-
-        /* ========== BADGES ========== */
-        .badge{padding:4px 11px;border-radius:20px;font-size:.72rem;font-weight:700;display:inline-block;transition:all .2s;letter-spacing:.2px}
-        .badge-success{background:rgba(46,125,50,0.1);color:var(--success)}
-        .badge-danger{background:rgba(198,40,40,0.1);color:var(--danger)}
-        .badge-warning{background:rgba(245,127,23,0.1);color:var(--warning)}
-        .badge-info{background:rgba(2,119,189,0.1);color:var(--info)}
-        .badge-primary{background:rgba(26,35,126,0.08);color:var(--primary)}
-        .badge-dark{background:#37474f;color:#fff}
-
-        /* ========== ALERTS ========== */
-        .alert{padding:13px 18px;border-radius:var(--radius-xs);margin-bottom:18px;font-size:.84rem;display:flex;align-items:center;gap:10px;transition:all .3s}
-        .alert-warning{background:rgba(245,127,23,0.08);border:1px solid rgba(245,127,23,0.2);color:#e65100}
-        .alert-success{background:rgba(46,125,50,0.08);border:1px solid rgba(46,125,50,0.2);color:var(--success)}
-
-        /* ========== SEARCH BOX ========== */
-        .search-box{position:relative;margin-bottom:18px}
-        .search-box input{width:100%;padding:12px 16px 12px 42px;border:2px solid transparent;border-radius:var(--radius-xs);font-size:.88rem;outline:none;background:rgba(0,0,0,0.03);transition:all var(--transition)}
-        .search-box input:focus{border-color:var(--primary);background:#fff;box-shadow:0 0 0 3px rgba(26,35,126,0.06),0 2px 12px rgba(26,35,126,0.06)}
-        .search-box i{position:absolute;left:15px;top:50%;transform:translateY(-50%);color:var(--text-light);font-size:.85rem}
-
-        /* ========== LOW STOCK ========== */
-        .low-stock-list{max-height:300px;overflow-y:auto}
-        .low-stock-item{display:flex;justify-content:space-between;align-items:center;padding:11px 14px;border-bottom:1px solid var(--border);transition:all .25s;border-radius:var(--radius-xs)}
-        .low-stock-item:last-child{border-bottom:none}
-        .low-stock-item:hover{background:rgba(198,40,40,0.04);transform:translateX(4px)}
-        .low-stock-item .item-info h4{font-size:.84rem;font-weight:600}
-        .low-stock-item .item-info p{font-size:.72rem;color:var(--text-light)}
-        .low-stock-item .stock-info{text-align:right}
-        .low-stock-item .stock-info .current{font-size:1.15rem;font-weight:800;color:var(--danger)}
-        .low-stock-item .stock-info .minimum{font-size:.72rem;color:var(--text-light)}
-
-        /* ========== DATA ENTRY ITEMS ========== */
-        .items-section{margin-top:22px;border:2px dashed rgba(26,35,126,0.15);border-radius:var(--radius);padding:22px;background:rgba(26,35,126,0.015);transition:border-color var(--transition)}
-        .items-section:hover{border-color:rgba(26,35,126,0.25)}
-        .items-section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
-        .items-section-header h4{font-size:.95rem;color:var(--primary);display:flex;align-items:center;gap:9px;font-weight:700}
-
-        .item-row{background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:var(--radius-sm);padding:18px;margin-bottom:14px;position:relative;transition:all var(--transition);animation:itemRowIn .35s var(--bounce)}
-        @keyframes itemRowIn{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
-        .item-row:hover{border-color:var(--primary);box-shadow:0 4px 18px rgba(26,35,126,0.08)}
-        .item-row-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
-        .item-row-header .item-number{background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700;box-shadow:0 2px 8px rgba(26,35,126,0.25)}
-        .item-row-grid{display:grid;grid-template-columns:2fr 1fr auto;gap:12px;align-items:end}
-
-        .item-preview-mini{background:rgba(26,35,126,0.03);padding:12px 16px;border-radius:var(--radius-xs);margin-top:12px;border-left:3px solid var(--primary);font-size:.78rem;animation:previewSlide .3s ease}
-        @keyframes previewSlide{from{opacity:0;max-height:0;padding:0 16px;margin:0}to{opacity:1;max-height:200px;padding:12px 16px;margin-top:12px}}
-        .item-preview-mini .detail{display:flex;justify-content:space-between;margin-bottom:4px}
-        .item-preview-mini .detail:last-child{margin-bottom:0}
-        .item-preview-mini .detail span:first-child{color:var(--text-light)}
-        .item-preview-mini .detail span:last-child{font-weight:700}
-
-        .item-stock-warning{background:rgba(255,111,0,0.08);border:1px solid rgba(255,111,0,0.25);padding:9px 14px;border-radius:var(--radius-xs);margin-top:10px;font-size:.75rem;color:#e65100;display:flex;align-items:center;gap:7px;animation:warnShake .5s ease}
-        @keyframes warnShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
-
-        .btn-remove-item{background:var(--danger);color:#fff;border:none;width:34px;height:34px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all var(--transition);flex-shrink:0;font-size:.8rem}
-        .btn-remove-item:hover{background:#b71c1c;transform:scale(1.15) rotate(90deg);box-shadow:0 0 14px rgba(198,40,40,0.4)}
-
-        .btn-add-item{width:100%;padding:14px;border:2px dashed rgba(26,35,126,0.25);background:rgba(26,35,126,0.03);color:var(--primary);border-radius:var(--radius-sm);cursor:pointer;font-weight:700;display:flex;align-items:center;justify-content:center;gap:9px;transition:all var(--transition);font-size:.88rem;font-family:inherit}
-        .btn-add-item:hover{background:rgba(26,35,126,0.07);border-color:var(--primary);transform:translateY(-2px);box-shadow:0 4px 14px rgba(26,35,126,0.08)}
-
-        .item-count-badge{background:var(--accent);color:#fff;padding:2px 10px;border-radius:12px;font-size:.68rem;font-weight:700;margin-left:6px}
-
-        /* ========== DROPDOWN ========== */
-        .sd-dropdown-list{position:absolute;background:#fff;border:1px solid var(--border);border-radius:var(--radius-xs);max-height:200px;overflow-y:auto;z-index:500;width:calc(100% - 32px);box-shadow:var(--shadow-lg);display:none}
-        .sd-dropdown-list.show{display:block;animation:dropIn .2s ease}
-        @keyframes dropIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
-        .dropdown-item{padding:10px 14px;cursor:pointer;font-size:.84rem;border-bottom:1px solid rgba(0,0,0,0.04);transition:all .15s}
-        .dropdown-item:last-child{border-bottom:none}
-        .dropdown-item:hover{background:rgba(26,35,126,0.06);padding-left:18px}
-
-        /* ========== MUTASI INFO ========== */
-        .mutasi-info{background:rgba(2,119,189,0.06);border:1px solid rgba(2,119,189,0.15);padding:14px 18px;border-radius:var(--radius-sm);margin-bottom:18px;font-size:.78rem}
-        .mutasi-info h4{color:var(--info);margin-bottom:8px;font-size:.84rem}
-        .mutasi-info ul{list-style:none;padding:0}
-        .mutasi-info ul li{padding:4px 0;display:flex;align-items:center;gap:7px}
-        .mutasi-info ul li .badge{font-size:.64rem}
-
-        /* ========== OPNAME ========== */
-        .opname-filter-bar{display:flex;gap:12px;align-items:center;margin-bottom:16px;padding:12px 16px;background:rgba(0,0,0,0.02);border-radius:var(--radius-sm);border:1px solid var(--border);flex-wrap:wrap}
-        .opname-filter-bar label{font-size:.84rem;font-weight:600;white-space:nowrap}
-        .opname-filter-bar select{padding:7px 12px;border:1px solid var(--border);border-radius:var(--radius-xs);font-size:.84rem;outline:none;transition:all .2s}
-        .opname-filter-bar select:focus{border-color:var(--primary);box-shadow:0 0 0 2px rgba(26,35,126,0.08)}
-        .opname-summary{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap}
-        .opname-summary .sum-item{padding:5px 14px;border-radius:20px;font-size:.78rem;font-weight:700}
-
-        /* ========== CONFIG BANNER ========== */
-        .config-banner{background:rgba(255,111,0,0.08);border:1px solid rgba(255,111,0,0.25);border-radius:var(--radius-sm);padding:16px 20px;margin-bottom:22px;font-size:.88rem;color:#e65100;display:flex;align-items:center;gap:12px}
-        .config-banner code{background:rgba(0,0,0,0.06);padding:2px 8px;border-radius:4px;font-size:.84rem}
-
-        /* ========== RIPPLE EFFECT ========== */
-        @keyframes rippleAnim{to{transform:scale(4);opacity:0}}
-
-        /* ========== RESPONSIVE ========== */
-        @media(max-width:768px){
-            .menu-toggle{display:block}
-            .sidebar{transform:translateX(-100%);box-shadow:none}
-            .sidebar.open{transform:translateX(0);box-shadow:4px 0 30px rgba(0,0,0,0.4)}
-            .main-content{margin-left:0;width:100%;padding:18px}
-            .form-grid{grid-template-columns:1fr}
-            .stats-grid{grid-template-columns:1fr 1fr}
-            .item-row-grid{grid-template-columns:1fr}
-            .top-bar h1{font-size:1.15rem}
-        }
-        @media(max-width:480px){
-            .stats-grid{grid-template-columns:1fr}
-            .login-box{padding:32px 24px}
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; line-height: 1.6; }
+        .login-container { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 50%, var(--primary-light) 100%); padding: 20px; }
+        .login-box { background: white; padding: 40px; border-radius: 12px; box-shadow: var(--shadow-lg); width: 100%; max-width: 420px; text-align: center; }
+        .login-box .logo { width: 80px; height: 80px; background: linear-gradient(135deg, var(--primary), var(--primary-light)); border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: white; }
+        .login-box h1 { color: var(--primary); margin-bottom: 5px; font-size: 1.4rem; }
+        .login-box h2 { color: var(--accent); font-size: 0.85rem; margin-bottom: 30px; font-weight: 400; }
+        .login-box .error-msg { color: var(--danger); margin-top: 12px; font-size: 0.85rem; min-height: 20px; }
+        .form-group { margin-bottom: 20px; text-align: left; }
+        .form-group label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 0.85rem; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px 16px; border: 2px solid var(--border); border-radius: 8px; font-size: 0.9rem; outline: none; transition: all 0.3s; font-family: inherit; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(26,35,126,0.1); }
+        .form-group input[readonly], .form-group input:disabled, .form-group select:disabled, .form-group textarea:disabled { background: #f5f5f5; color: #757575; cursor: not-allowed; }
+        .form-group input[readonly]:not(:disabled) { font-weight: 600; color: var(--primary); }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .form-grid .full-width { grid-column: 1 / -1; }
+        .btn { padding: 12px 24px; border: none; border-radius: 8px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.3s; display: inline-flex; align-items: center; gap: 8px; font-family: inherit; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-light); }
+        .btn-success { background: var(--success); color: white; }
+        .btn-success:hover { background: #388e3c; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-danger:hover { background: #d32f2f; }
+        .btn-warning { background: var(--warning); color: white; }
+        .btn-info { background: var(--info); color: white; }
+        .btn-sm { padding: 8px 16px; font-size: 0.8rem; }
+        .btn-block { width: 100%; justify-content: center; }
+        .app-container { display: none; }
+        .app-container.active { display: flex; }
+        .sidebar { width: 260px; background: var(--primary-dark); color: white; min-height: 100vh; position: fixed; left: 0; top: 0; z-index: 100; transition: all 0.3s; overflow-y: auto; }
+        .sidebar-header { padding: 24px 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .sidebar-header h2 { font-size: 1.1rem; }
+        .sidebar-header p { font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-top: 4px; }
+        .sidebar-menu { padding: 16px 0; }
+        .menu-item { padding: 14px 24px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: all 0.3s; color: rgba(255,255,255,0.7); font-size: 0.9rem; }
+        .menu-item:hover, .menu-item.active { background: rgba(255,255,255,0.1); color: white; border-left: 3px solid var(--accent); }
+        .menu-item i { width: 20px; text-align: center; }
+        .main-content { margin-left: 260px; padding: 24px; width: calc(100% - 260px); min-height: 100vh; }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+        .top-bar h1 { font-size: 1.4rem; color: var(--primary); }
+        .user-info { display: flex; align-items: center; gap: 12px; }
+        .user-info .avatar { width: 36px; height: 36px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .stat-card { background: var(--card); padding: 20px; border-radius: 12px; box-shadow: var(--shadow); display: flex; align-items: center; gap: 16px; transition: transform 0.3s; }
+        .stat-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+        .stat-card .icon { width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; color: white; }
+        .stat-card .icon.blue { background: var(--info); }
+        .stat-card .icon.green { background: var(--success); }
+        .stat-card .icon.red { background: var(--danger); }
+        .stat-card .icon.orange { background: var(--accent); }
+        .stat-card .info h3 { font-size: 1.5rem; }
+        .stat-card .info p { font-size: 0.75rem; color: var(--text-light); }
+        .card { background: var(--card); border-radius: 12px; box-shadow: var(--shadow); margin-bottom: 20px; overflow: hidden; }
+        .card-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .card-header h3 { font-size: 1rem; display: flex; align-items: center; gap: 8px; }
+        .card-body { padding: 20px; }
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        table th, table td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
+        table th { background: #f8f9fa; font-weight: 600; position: sticky; top: 0; z-index: 1; }
+        table tr:hover { background: #f8f9fa; }
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; display: inline-block; }
+        .badge-success { background: #e8f5e9; color: var(--success); }
+        .badge-danger { background: #ffebee; color: var(--danger); }
+        .badge-warning { background: #fff8e1; color: var(--warning); }
+        .badge-info { background: #e3f2fd; color: var(--info); }
+        .badge-primary { background: #e8eaf6; color: var(--primary); }
+        .badge-dark { background: #424242; color: #fff; }
+        .alert { padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 0.85rem; display: flex; align-items: center; gap: 10px; }
+        .alert-warning { background: #fff8e1; border: 1px solid #ffe082; color: #e65100; }
+        .alert-success { background: #e8f5e9; border: 1px solid #a5d6a7; color: var(--success); }
+        .low-stock-list { max-height: 300px; overflow-y: auto; }
+        .low-stock-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
+        .low-stock-item:last-child { border-bottom: none; }
+        .low-stock-item .item-info h4 { font-size: 0.85rem; }
+        .low-stock-item .item-info p { font-size: 0.75rem; color: var(--text-light); }
+        .low-stock-item .stock-info { text-align: right; }
+        .low-stock-item .stock-info .current { font-size: 1.1rem; font-weight: bold; color: var(--danger); }
+        .low-stock-item .stock-info .minimum { font-size: 0.75rem; color: var(--text-light); }
+        .search-box { position: relative; margin-bottom: 16px; }
+        .search-box input { width: 100%; padding: 12px 16px 12px 40px; border: 2px solid var(--border); border-radius: 8px; font-size: 0.9rem; outline: none; }
+        .search-box input:focus { border-color: var(--primary); }
+        .search-box i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-light); }
+        .page { display: none; }
+        .page.active { display: block; }
+        .toast { position: fixed; top: 20px; right: 20px; padding: 16px 24px; border-radius: 8px; color: white; font-weight: 500; z-index: 9999; transform: translateX(400px); transition: all 0.3s; box-shadow: var(--shadow-lg); font-size: 0.9rem; }
+        .toast.show { transform: translateX(0); }
+        .toast-success { background: var(--success); }
+        .toast-error { background: var(--danger); }
+        .toast-warning { background: var(--warning); }
+        .toast-info { background: var(--info); }
+        .loading { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); z-index: 9998; align-items: center; justify-content: center; }
+        .loading.active { display: flex; }
+        .spinner { width: 40px; height: 40px; border: 4px solid var(--border); border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .items-section { margin-top: 20px; border: 2px dashed var(--border); border-radius: 12px; padding: 20px; background: #fafafa; }
+        .items-section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .items-section-header h4 { font-size: 1rem; color: var(--primary); display: flex; align-items: center; gap: 8px; }
+        .item-row { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 12px; position: relative; transition: all 0.3s; }
+        .item-row:hover { border-color: var(--primary); box-shadow: var(--shadow); }
+        .item-row-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .item-row-header .item-number { background: var(--primary); color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: bold; }
+        .item-row-grid { display: grid; grid-template-columns: 2fr 1fr auto; gap: 12px; align-items: end; }
+        .item-preview-mini { background: #f8f9fa; padding: 10px 14px; border-radius: 6px; margin-top: 10px; border-left: 3px solid var(--primary); font-size: 0.78rem; }
+        .item-preview-mini .detail { display: flex; justify-content: space-between; margin-bottom: 4px; }
+        .item-preview-mini .detail span:first-child { color: var(--text-light); }
+        .item-preview-mini .detail span:last-child { font-weight: 600; }
+        .item-stock-warning { background: #fff3e0; border: 1px solid #ffcc02; padding: 8px 12px; border-radius: 6px; margin-top: 8px; font-size: 0.75rem; color: #e65100; display: flex; align-items: center; gap: 6px; }
+        .btn-remove-item { background: var(--danger); color: white; border: none; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s; flex-shrink: 0; }
+        .btn-remove-item:hover { background: #b71c1c; transform: scale(1.1); }
+        .btn-add-item { width: 100%; padding: 14px; border: 2px dashed var(--primary); background: rgba(26,35,126,0.05); color: var(--primary); border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.3s; font-size: 0.9rem; }
+        .btn-add-item:hover { background: rgba(26,35,126,0.1); border-color: var(--primary-light); }
+        .item-count-badge { background: var(--accent); color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; margin-left: 8px; }
+        .mutasi-info { background: #e3f2fd; border: 1px solid #90caf9; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 0.78rem; }
+        .mutasi-info h4 { color: var(--info); margin-bottom: 6px; font-size: 0.85rem; }
+        .mutasi-info ul { list-style: none; padding: 0; }
+        .mutasi-info ul li { padding: 3px 0; display: flex; align-items: center; gap: 6px; }
+        .mutasi-info ul li .badge { font-size: 0.65rem; }
+        .sd-dropdown-list { position: absolute; background: white; border: 1px solid var(--border); border-radius: 8px; max-height: 200px; overflow-y: auto; z-index: 500; width: calc(100% - 32px); box-shadow: var(--shadow); display: none; }
+        .sd-dropdown-list.show { display: block; }
+        .dropdown-item { padding: 10px 14px; cursor: pointer; font-size: 0.85rem; border-bottom: 1px solid #f0f0f0; }
+        .dropdown-item:hover { background: #f5f5f5; }
+        .opname-filter-bar { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; padding: 12px 16px; background: #f8f9fa; border-radius: 8px; border: 1px solid var(--border); }
+        .opname-filter-bar label { font-size: 0.85rem; font-weight: 600; color: var(--text); white-space: nowrap; }
+        .opname-filter-bar select { padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.85rem; outline: none; }
+        .opname-summary { display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+        .opname-summary .sum-item { padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
+        .menu-toggle { display: none; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--primary); }
+        /* Config banner */
+        .config-banner { background: #fff3e0; border: 2px solid var(--accent); border-radius: 8px; padding: 16px 20px; margin-bottom: 20px; font-size: 0.9rem; color: #e65100; display: flex; align-items: center; gap: 12px; }
+        .config-banner code { background: rgba(0,0,0,0.08); padding: 2px 8px; border-radius: 4px; font-size: 0.85rem; }
+        @media (max-width: 768px) {
+            .menu-toggle { display: block; }
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.open { transform: translateX(0); }
+            .main-content { margin-left: 0; width: 100%; padding: 16px; }
+            .form-grid { grid-template-columns: 1fr; }
+            .stats-grid { grid-template-columns: 1fr 1fr; }
+            .item-row-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -306,10 +162,6 @@
 
     <!-- LOGIN -->
     <div class="login-container" id="loginPage">
-        <div class="login-orb orb-1"></div>
-        <div class="login-orb orb-2"></div>
-        <div class="login-orb orb-3"></div>
-        <div class="login-orb orb-4"></div>
         <div class="login-box">
             <div class="logo"><i class="fas fa-warehouse"></i></div>
             <h1>Binus Alam Sutera</h1>
@@ -322,7 +174,7 @@
                 <label>Password</label>
                 <input type="password" id="loginPassword" value="admin123">
             </div>
-            <button class="btn-primary" onclick="handleLogin()">
+            <button class="btn btn-primary btn-block" onclick="handleLogin()">
                 <i class="fas fa-sign-in-alt"></i> Login
             </button>
             <p class="error-msg" id="loginError"></p>
@@ -343,18 +195,18 @@
                 <div class="menu-item" onclick="showPage('stockGudang', this)"><i class="fas fa-warehouse"></i> Stock Gudang</div>
                 <div class="menu-item" onclick="showPage('stockOpname', this)"><i class="fas fa-clipboard-check"></i> Stock Opname</div>
                 <div class="menu-item" onclick="showPage('transaksi', this)"><i class="fas fa-history"></i> Riwayat Transaksi</div>
-                <div class="menu-item" onclick="handleLogout()" style="margin-top:40px;color:#ef9a9a;"><i class="fas fa-sign-out-alt"></i> Logout</div>
+                <div class="menu-item" onclick="handleLogout()" style="margin-top: 40px; color: #ef9a9a;"><i class="fas fa-sign-out-alt"></i> Logout</div>
             </div>
         </div>
 
         <div class="main-content">
             <div class="top-bar">
-                <div style="display:flex;align-items:center;gap:12px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
                     <button class="menu-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
                     <h1 id="pageTitle">Dashboard</h1>
                 </div>
                 <div class="user-info">
-                    <span style="font-size:.84rem;color:var(--text-light);">Admin</span>
+                    <span style="font-size: 0.85rem; color: var(--text-light);">Admin</span>
                     <div class="avatar">A</div>
                 </div>
             </div>
@@ -368,7 +220,7 @@
                     <div class="stat-card"><div class="icon orange"><i class="fas fa-exchange-alt"></i></div><div class="info"><h3 id="stat-totalTransaksi">0</h3><p>Total Transaksi</p></div></div>
                 </div>
                 <div class="card" id="lowStockCard" style="display:none;">
-                    <div class="card-header"><h3><i class="fas fa-exclamation-circle" style="color:var(--danger);"></i> Peringatan Stok Rendah</h3></div>
+                    <div class="card-header"><h3><i class="fas fa-exclamation-circle" style="color: var(--danger);"></i> Peringatan Stok Rendah</h3></div>
                     <div class="card-body">
                         <div class="alert alert-warning"><i class="fas fa-info-circle"></i> Barang di bawah ini memiliki stok tersedia di bawah stok paten. Segera beli baru!</div>
                         <div class="low-stock-list" id="lowStockList"></div>
@@ -392,10 +244,10 @@
                 <div class="card">
                     <div class="card-header"><h3><i class="fas fa-plus-circle"></i> Input Transaksi Baru</h3></div>
                     <div class="card-body">
-                        <div style="background:rgba(2,119,189,0.06);padding:16px;border-radius:var(--radius-sm);margin-bottom:22px;border:1px solid rgba(2,119,189,0.15);">
-                            <h4 style="margin-bottom:12px;color:var(--primary);font-size:.9rem;"><i class="fas fa-search"></i> Cari Transaksi Lama (Edit Mode)</h4>
-                            <div style="display:flex;gap:10px;">
-                                <input type="text" id="searchTicketInput" placeholder="Masukkan Nomor Tiket..." style="flex:1;padding:10px 14px;border:2px solid var(--border);border-radius:var(--radius-xs);font-size:.88rem;outline:none;transition:all .3s;font-family:inherit;background:#fff" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
+                        <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #90caf9;">
+                            <h4 style="margin-bottom: 10px; color: var(--primary);"><i class="fas fa-search"></i> Cari Transaksi Lama (Edit Mode)</h4>
+                            <div style="display: flex; gap: 10px;">
+                                <input type="text" id="searchTicketInput" placeholder="Masukkan Nomor Tiket..." style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 6px;">
                                 <button class="btn btn-primary" onclick="searchTicket()">Cari</button>
                                 <button class="btn btn-warning" onclick="resetToNewEntry()" style="display:none;" id="btnResetSearch">Batal / Baru</button>
                             </div>
@@ -427,7 +279,7 @@
                                 </div>
                                 <div class="form-group full-width"><label>Keterangan</label><textarea id="entryKeterangan" rows="2" placeholder="Keterangan tambahan..." disabled></textarea></div>
                             </div>
-                            <div id="editModeControl" style="display:none;margin-bottom:20px;text-align:right;">
+                            <div id="editModeControl" style="display:none; margin-bottom: 20px; text-align: right;">
                                 <button type="button" class="btn btn-warning" onclick="enableEditMode()"><i class="fas fa-edit"></i> Edit Transaksi Ini</button>
                             </div>
                             <div class="items-section">
@@ -437,7 +289,7 @@
                                 <div id="itemsContainer"></div>
                                 <button type="button" class="btn-add-item" id="btnAddItem" onclick="addItemRow()" disabled><i class="fas fa-plus"></i> Tambah Barang Lain</button>
                             </div>
-                            <div style="margin-top:22px;display:flex;gap:12px;">
+                            <div style="margin-top: 20px; display: flex; gap: 12px;">
                                 <button type="submit" class="btn btn-success" id="btnSubmit" disabled><i class="fas fa-save"></i> <span id="btnSubmitText">Simpan Transaksi</span></button>
                                 <button type="button" class="btn btn-danger" onclick="resetForm()"><i class="fas fa-redo"></i> Reset</button>
                             </div>
@@ -452,7 +304,7 @@
                     <div class="card-header"><h3><i class="fas fa-boxes"></i> Master Barang</h3><span class="badge badge-info" id="masterCount">0 items</span></div>
                     <div class="card-body">
                         <div class="search-box"><i class="fas fa-search"></i><input type="text" id="searchMaster" placeholder="Cari kode atau nama barang..." oninput="filterMasterBarang()"></div>
-                        <div class="table-container" style="max-height:600px;overflow-y:auto;">
+                        <div class="table-container" style="max-height: 600px; overflow-y: auto;">
                             <table>
                                 <thead><tr><th>Kode</th><th>Nama Barang</th><th>Lokasi</th><th>Tersedia</th><th>Paten</th><th>Status</th></tr></thead>
                                 <tbody id="masterBarangTable"></tbody>
@@ -468,7 +320,7 @@
                     <div class="card-header"><h3><i class="fas fa-warehouse"></i> Stock Gudang</h3><span class="badge badge-info" id="stockCount">0 items</span></div>
                     <div class="card-body">
                         <div class="search-box"><i class="fas fa-search"></i><input type="text" id="searchStock" placeholder="Cari nama barang..." oninput="filterStockGudang()"></div>
-                        <div class="table-container" style="max-height:600px;overflow-y:auto;">
+                        <div class="table-container" style="max-height: 600px; overflow-y: auto;">
                             <table>
                                 <thead><tr><th>Nama Barang</th><th>Spec. Note</th><th>Stok</th><th>Berfungsi</th><th>Rusak (IT Loc)</th><th>Rusak (Asset)</th></tr></thead>
                                 <tbody id="stockGudangTable"></tbody>
@@ -483,7 +335,7 @@
                 <div class="card">
                     <div class="card-header">
                         <h3><i class="fas fa-clipboard-check"></i> Stock Opname</h3>
-                        <button class="btn btn-success btn-sm" onclick="saveOpnameStatus()" id="btnSaveOpname" style="display:none;">
+                        <button class="btn btn-success" onclick="saveOpnameStatus()" id="btnSaveOpname" style="display:none;">
                             <i class="fas fa-save"></i> Simpan Status Opname
                         </button>
                     </div>
@@ -495,7 +347,7 @@
                                     <option value="">-- Pilih Lokasi --</option>
                                 </select>
                             </div>
-                            <div class="form-group" style="display:flex;align-items:flex-end;">
+                            <div class="form-group" style="display: flex; align-items: flex-end;">
                                 <button class="btn btn-info" onclick="exportToExcel()" id="btnExport" disabled>
                                     <i class="fas fa-file-excel"></i> Export Excel
                                 </button>
@@ -513,13 +365,13 @@
                         <div id="opnameAlert" class="alert alert-warning" style="display:none;">
                             <i class="fas fa-info-circle"></i> Pilih lokasi untuk melihat data stock opname.
                         </div>
-                        <div class="table-container" style="max-height:600px;overflow-y:auto;">
+                        <div class="table-container" style="max-height: 600px; overflow-y: auto;">
                             <table>
                                 <thead>
                                     <tr><th>Kode</th><th>Nama Barang</th><th>Lokasi</th><th>Tersedia</th><th>Rusak</th><th>Permanen</th><th>Dipinjam</th><th>Status Fisik</th><th>Status Opname</th></tr>
                                 </thead>
                                 <tbody id="opnameTableBody">
-                                    <tr><td colspan="9" style="text-align:center;padding:40px;color:var(--text-light);">Pilih lokasi terlebih dahulu</td></tr>
+                                    <tr><td colspan="9" style="text-align:center;">Pilih lokasi terlebih dahulu</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -533,7 +385,7 @@
                     <div class="card-header"><h3><i class="fas fa-history"></i> Riwayat Transaksi</h3><span class="badge badge-info" id="transaksiCount">0 transaksi</span></div>
                     <div class="card-body">
                         <div class="search-box"><i class="fas fa-search"></i><input type="text" id="searchTransaksi" placeholder="Cari transaksi..." oninput="filterTransaksi()"></div>
-                        <div class="table-container" style="max-height:600px;overflow-y:auto;">
+                        <div class="table-container" style="max-height: 600px; overflow-y: auto;">
                             <table>
                                 <thead><tr><th>Tanggal</th><th>Tiket</th><th>Peminjam</th><th>Kode</th><th>Nama Barang</th><th>Qty</th><th>Mutasi</th><th>Keterangan</th></tr></thead>
                                 <tbody id="transaksiTable"></tbody>
@@ -547,9 +399,10 @@
 
     <script>
         // ============================================
-        // KONFIGURASI
+        // ⚙️  KONFIGURASI — GANTI URL DI BAWAH INI
         // ============================================
         const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzjGmFB1L9EBuMO3BMpNTYCe7T0NLeVUB85PApS5cA17UL2Fg0qDc7bblTcS8CAJm6tXA/exec';
+        // ============================================
 
         // ============================================
         // APP STATE
@@ -578,55 +431,6 @@
             if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
             const result = await response.json();
             return result;
-        }
-
-        // ============================================
-        // HELPERS
-        // ============================================
-        function showToast(message, type = 'info') {
-            const toast = document.getElementById('toast');
-            toast.textContent = message;
-            toast.className = `toast toast-${type} show`;
-            setTimeout(() => { toast.classList.remove('show'); }, 3000);
-        }
-
-        function showLoading() { document.getElementById('loading').classList.add('active'); }
-        function hideLoading() { document.getElementById('loading').classList.remove('active'); }
-
-        function formatDate(dateStr) {
-            if (!dateStr) return '-';
-            const d = new Date(dateStr);
-            if (!isNaN(d.getTime())) {
-                return d.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' });
-            }
-            return dateStr;
-        }
-
-        function getMutasiBadge(kode) {
-            const map = {
-                '1': '<span class="badge badge-info">1 - Masuk</span>',
-                '2': '<span class="badge badge-warning">2 - Keluar</span>',
-                '3': '<span class="badge badge-danger">3 - Rusak</span>',
-                '4': '<span class="badge badge-danger">4 - Permanen</span>',
-                '5': '<span class="badge badge-success">5 - Masuk Baru</span>'
-            };
-            return map[kode] || (kode || '-');
-        }
-
-        function animateCounter(elementId, targetValue) {
-            const el = document.getElementById(elementId);
-            const target = parseInt(targetValue) || 0;
-            if (target === 0) { el.textContent = '0'; return; }
-            const duration = 800;
-            const startTime = performance.now();
-            function step(now) {
-                const elapsed = now - startTime;
-                const progress = Math.min(elapsed / duration, 1);
-                const eased = 1 - Math.pow(1 - progress, 3);
-                el.textContent = Math.floor(eased * target).toLocaleString();
-                if (progress < 1) requestAnimationFrame(step);
-            }
-            requestAnimationFrame(step);
         }
 
         // ============================================
@@ -693,10 +497,10 @@
             try {
                 const data = await callServer('getDashboardData');
                 hideLoading();
-                animateCounter('stat-totalItems', data.totalItems);
-                animateCounter('stat-totalStock', data.totalStock);
-                animateCounter('stat-totalRusak', data.totalRusak);
-                animateCounter('stat-totalTransaksi', data.totalTransactions);
+                document.getElementById('stat-totalItems').textContent = data.totalItems || 0;
+                document.getElementById('stat-totalStock').textContent = data.totalStock || 0;
+                document.getElementById('stat-totalRusak').textContent = data.totalRusak || 0;
+                document.getElementById('stat-totalTransaksi').textContent = data.totalTransactions || 0;
                 const lowStockCard = document.getElementById('lowStockCard');
                 const lowStockList = document.getElementById('lowStockList');
                 if (data.lowStockItems && data.lowStockItems.length > 0) {
@@ -723,7 +527,7 @@
                         </tr>
                     `).join('');
                 } else {
-                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-light);">Belum ada transaksi</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Belum ada transaksi</td></tr>';
                 }
             } catch (error) {
                 hideLoading();
@@ -824,6 +628,8 @@
             inputs.forEach(el => { if (el.id !== 'searchTicketInput') el.disabled = !enable; });
             document.getElementById('btnSubmit').disabled = !enable;
             document.getElementById('btnAddItem').disabled = !enable;
+            
+            // Update status input di dalam item rows
             Object.keys(appState.itemData).forEach(itemId => {
                 const searchInput = document.getElementById(`search_${itemId}`);
                 const qtyInput = document.getElementById(`qty_${itemId}`);
@@ -891,12 +697,14 @@
             appState.itemCounter = 0;
             appState.itemData = {};
             document.getElementById('itemsContainer').innerHTML = '';
+            
             if (!appState.isEditMode) {
                 toggleFormInputs(true);
                 document.getElementById('btnSubmitText').textContent = 'Simpan Transaksi';
             } else {
                 toggleFormInputs(false);
             }
+            
             addItemRow();
         }
 
@@ -909,22 +717,22 @@
             appState.itemData[itemId] = { kodeBarang: '', namaBarang: '', qty: 1, tersedia: 0, stokPaten: 0, _rowIndex: null };
             const container = document.getElementById('itemsContainer');
             const itemNumber = Object.keys(appState.itemData).length;
-
+            
             const row = document.createElement('div');
             row.className = 'item-row';
             row.id = `row_${itemId}`;
             row.innerHTML = `
                 <div class="item-row-header">
-                    <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="display:flex; align-items:center; gap:10px;">
                         <div class="item-number">${itemNumber}</div>
-                        <strong style="font-size:.84rem;">Barang #${itemNumber}</strong>
+                        <strong style="font-size:0.85rem;">Barang #${itemNumber}</strong>
                     </div>
-                    <button type="button" class="btn-remove-item" onclick="removeItemRow('${itemId}')" title="Hapus barang ini">
+                    <button type="button" class="btn-remove-item" onclick="removeItemRow('${itemId}')" title="Hapus barang ini" style="display: flex;">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
                 <div class="item-row-grid">
-                    <div class="form-group" style="margin-bottom:0;position:relative;">
+                    <div class="form-group" style="margin-bottom:0; position:relative;">
                         <label>Nama Barang</label>
                         <input type="text" id="search_${itemId}" placeholder="Ketik untuk mencari barang..."
                                oninput="onItemSearch('${itemId}')" autocomplete="off">
@@ -938,87 +746,132 @@
                     <div></div>
                 </div>
                 <input type="hidden" id="kode_${itemId}" value="">
-                <div class="item-preview-mini" id="preview_${itemId}" style="display:none;"></div>
-                <div class="item-stock-warning" id="warning_${itemId}" style="display:none;"></div>
+                <div class="item-preview-mini" id="preview_${itemId}" style="display:none;">
+                    <div class="detail"><span>Kode:</span><span id="prevKode_${itemId}">-</span></div>
+                    <div class="detail"><span>Stok Tersedia:</span><span id="prevTersedia_${itemId}">-</span></div>
+                    <div class="detail"><span>Stok Paten:</span><span id="prevPaten_${itemId}">-</span></div>
+                    <div class="detail"><span>Lokasi:</span><span id="prevLokasi_${itemId}">-</span></div>
+                </div>
+                <div class="item-stock-warning" id="warning_${itemId}" style="display:none;">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span id="warningText_${itemId}"></span>
+                </div>
             `;
             container.appendChild(row);
             updateItemCount();
-        }
-
-        function onItemSearch(itemId) {
-            const input = document.getElementById(`search_${itemId}`);
-            const dropdown = document.getElementById(`dropdown_${itemId}`);
-            const query = input.value.toLowerCase().trim();
-            if (query.length < 1) { dropdown.classList.remove('show'); return; }
-            const filtered = appState.namaBarangList.filter(item =>
-                item.nama.toLowerCase().includes(query) || item.kode.toLowerCase().includes(query)
-            ).slice(0, 10);
-            if (filtered.length === 0) { dropdown.classList.remove('show'); return; }
-            dropdown.innerHTML = filtered.map(item => {
-                const origIdx = appState.namaBarangList.indexOf(item);
-                return `<div class="dropdown-item" onmousedown="selectItemByIndex('${itemId}', ${origIdx})">
-                    <strong>${item.kode}</strong> - ${item.nama} <span style="color:var(--text-light);font-size:.73rem;">[Stok: ${item.tersedia}]</span>
-                </div>`;
-            }).join('');
-            dropdown.classList.add('show');
-        }
-
-        function selectItemByIndex(itemId, index) {
-            const itemInfo = appState.namaBarangList[index];
-            if (itemInfo) selectItemForInput(itemId, itemInfo, false);
-        }
-
-        function selectItemForInput(itemId, itemInfo, isEdit) {
-            appState.itemData[itemId].kodeBarang = itemInfo.kode;
-            appState.itemData[itemId].namaBarang = itemInfo.nama;
-            appState.itemData[itemId].tersedia = itemInfo.tersedia || 0;
-            appState.itemData[itemId].stokPaten = itemInfo.stokPaten || 0;
-            appState.itemData[itemId].lokasi = itemInfo.lokasi || '';
-            document.getElementById(`search_${itemId}`).value = `${itemInfo.kode} - ${itemInfo.nama}`;
-            document.getElementById(`kode_${itemId}`).value = itemInfo.kode;
-            document.getElementById(`dropdown_${itemId}`).classList.remove('show');
-            const preview = document.getElementById(`preview_${itemId}`);
-            preview.style.display = 'block';
-            preview.innerHTML = `
-                <div class="detail"><span>Kode:</span><span>${itemInfo.kode}</span></div>
-                <div class="detail"><span>Lokasi:</span><span>${itemInfo.lokasi || '-'}</span></div>
-                <div class="detail"><span>Stok Tersedia:</span><span>${itemInfo.tersedia}</span></div>
-                <div class="detail"><span>Stok Paten:</span><span>${itemInfo.stokPaten || '-'}</span></div>
-            `;
-            updateItemWarning(itemId);
+            
+            // Atur status disabled berdasarkan mode saat ini
+            const searchInput = document.getElementById(`search_${itemId}`);
+            const qtyInput = document.getElementById(`qty_${itemId}`);
+            
+            if (!appState.isEditMode) {
+                // Mode Entry Baru: Enable
+                if (searchInput) searchInput.disabled = false;
+                if (qtyInput) qtyInput.disabled = false;
+                setTimeout(() => { if(searchInput) searchInput.focus(); }, 100);
+            } else {
+                // Mode Edit (tapi belum klik tombol Edit): Disable
+                if (searchInput) searchInput.disabled = true;
+                if (qtyInput) qtyInput.disabled = true;
+            }
         }
 
         function removeItemRow(itemId) {
             const row = document.getElementById(`row_${itemId}`);
-            if (row) {
-                row.style.opacity = '0';
-                row.style.transform = 'translateX(-20px) scale(.96)';
-                row.style.transition = 'all .3s ease';
-                setTimeout(() => {
-                    row.remove();
-                    delete appState.itemData[itemId];
-                    updateItemCount();
-                }, 300);
+            if (row) { row.remove(); delete appState.itemData[itemId]; updateItemCount(); renumberItems(); }
+        }
+
+        function renumberItems() {
+            const rows = document.querySelectorAll('.item-row');
+            rows.forEach((row, index) => {
+                const numEl = row.querySelector('.item-number');
+                const strongEl = row.querySelector('.item-row-header strong');
+                if (numEl) numEl.textContent = index + 1;
+                if (strongEl) strongEl.textContent = `Barang #${index + 1}`;
+            });
+        }
+
+        function updateItemCount() {
+            const count = Object.keys(appState.itemData).length;
+            document.getElementById('itemCountBadge').textContent = `${count} item${count > 1 ? 's' : ''}`;
+        }
+
+        function onItemSearch(itemId) {
+            const input = document.getElementById(`search_${itemId}`);
+            if (!input || input.disabled) return;
+            const dropdown = document.getElementById(`dropdown_${itemId}`);
+            const query = input.value.toLowerCase().trim();
+            dropdown.innerHTML = '';
+            if (query.length === 0) { dropdown.classList.remove('show'); return; }
+            const filtered = appState.namaBarangList.filter(item =>
+                item.nama.toLowerCase().includes(query) || item.kode.toLowerCase().includes(query)
+            ).slice(0, 20);
+            if (filtered.length > 0) {
+                filtered.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'dropdown-item';
+                    div.innerHTML = `<span style="color:var(--primary);font-weight:600;">${item.kode}</span> ${item.nama} <span style="color:var(--text-light);font-size:0.75rem;float:right;">Stok: ${item.tersedia}</span>`;
+                    div.onclick = () => selectItemForInput(itemId, item);
+                    dropdown.appendChild(div);
+                });
+                dropdown.classList.add('show');
+            } else {
+                dropdown.innerHTML = '<div class="dropdown-item" style="color:var(--text-light);cursor:default;">Barang tidak ditemukan</div>';
+                dropdown.classList.add('show');
             }
         }
 
-        function onItemQtyChange(itemId) {
-            const qty = parseInt(document.getElementById(`qty_${itemId}`).value) || 1;
-            appState.itemData[itemId].qty = qty;
+        function selectItemForInput(itemId, item, isLoadFromSearch = false) {
+            const input = document.getElementById(`search_${itemId}`);
+            const kodeInput = document.getElementById(`kode_${itemId}`);
+            const dropdown = document.getElementById(`dropdown_${itemId}`);
+            const preview = document.getElementById(`preview_${itemId}`);
+            if (!input || !kodeInput || !preview) return;
+            input.value = item.nama;
+            kodeInput.value = item.kode;
+            if (!isLoadFromSearch && dropdown) dropdown.classList.remove('show');
+            const existingRowIndex = appState.itemData[itemId] ? appState.itemData[itemId]._rowIndex : null;
+            appState.itemData[itemId] = {
+                kodeBarang: item.kode, namaBarang: item.nama,
+                qty: parseInt(document.getElementById(`qty_${itemId}`)?.value) || 1,
+                tersedia: item.tersedia, stokPaten: item.stokPaten,
+                lokasi: item.lokasi, _rowIndex: existingRowIndex
+            };
+            preview.style.display = 'block';
+            document.getElementById(`prevKode_${itemId}`).textContent = item.kode;
+            document.getElementById(`prevTersedia_${itemId}`).textContent = item.tersedia;
+            document.getElementById(`prevPaten_${itemId}`).textContent = item.stokPaten;
+            document.getElementById(`prevLokasi_${itemId}`).textContent = item.lokasi || '-';
             updateItemWarning(itemId);
+        }
+
+        function onItemQtyChange(itemId) {
+            if (appState.itemData[itemId]) {
+                appState.itemData[itemId].qty = parseInt(document.getElementById(`qty_${itemId}`)?.value) || 1;
+                updateItemWarning(itemId);
+            }
         }
 
         function updateItemWarning(itemId) {
             const item = appState.itemData[itemId];
-            const warningEl = document.getElementById(`warning_${itemId}`);
-            if (!warningEl) return;
-            const mutasi = parseInt(document.getElementById('entryKodeMutasi').value);
-            const qty = item.qty || 1;
-            if ((mutasi === 2 || mutasi === 4) && qty > item.tersedia) {
-                warningEl.style.display = 'flex';
-                warningEl.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Qty (${qty}) melebihi stok tersedia (${item.tersedia})`;
+            if (!item || !item.kodeBarang) return;
+            const kodeMutasi = parseInt(document.getElementById('entryKodeMutasi')?.value) || 0;
+            const warning = document.getElementById(`warning_${itemId}`);
+            const warningText = document.getElementById(`warningText_${itemId}`);
+            if (!warning || !warningText) return;
+            if (kodeMutasi === 2 || kodeMutasi === 3 || kodeMutasi === 4) {
+                const afterQty = item.tersedia - item.qty;
+                if (afterQty < 0) {
+                    warning.style.display = 'flex';
+                    warningText.textContent = `STOK TIDAK CUKUP! Tersedia ${item.tersedia}, diminta ${item.qty}.`;
+                } else if (afterQty < item.stokPaten && item.stokPaten > 0) {
+                    warning.style.display = 'flex';
+                    warningText.textContent = `Stok akan jadi ${afterQty} (di bawah minimum ${item.stokPaten}). Perlu beli baru!`;
+                } else {
+                    warning.style.display = 'none';
+                }
             } else {
-                warningEl.style.display = 'none';
+                warning.style.display = 'none';
             }
         }
 
@@ -1026,10 +879,12 @@
             Object.keys(appState.itemData).forEach(itemId => updateItemWarning(itemId));
         }
 
-        function updateItemCount() {
-            const count = Object.keys(appState.itemData).length;
-            document.getElementById('itemCountBadge').textContent = `${count} item`;
-        }
+        document.addEventListener('click', function(e) {
+            document.querySelectorAll('.sd-dropdown-list').forEach(dd => {
+                const parentRow = dd.closest('.item-row');
+                if (parentRow && !parentRow.contains(e.target)) dd.classList.remove('show');
+            });
+        });
 
         // ============================================
         // MASTER BARANG
@@ -1050,30 +905,21 @@
         function renderMasterBarang(data) {
             document.getElementById('masterCount').textContent = `${data.length} items`;
             const tbody = document.getElementById('masterBarangTable');
-            if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-light);">Tidak ada data</td></tr>';
-                return;
-            }
+            if (!data || data.length === 0) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Tidak ada data</td></tr>'; return; }
             tbody.innerHTML = data.map(item => {
-                let statusBadge = '';
-                if (item.tersedia <= 0) statusBadge = '<span class="badge badge-danger">Habis</span>';
-                else if (item.tersedia <= (item.stokPaten || 0)) statusBadge = '<span class="badge badge-warning">Rendah</span>';
-                else statusBadge = '<span class="badge badge-success">Tersedia</span>';
-                return `<tr>
-                    <td><strong>${item.kode}</strong></td>
-                    <td>${item.nama}</td>
-                    <td>${item.lokasi || '-'}</td>
-                    <td>${item.tersedia}</td>
-                    <td>${item.stokPaten || '-'}</td>
-                    <td>${statusBadge}</td>
-                </tr>`;
+                const tersedia = parseInt(item['Tersedia']) || 0;
+                const paten = parseInt(item['Stok Paten']) || 0;
+                let statusBadge = paten > 0 && tersedia < paten ? '<span class="badge badge-danger">Stok Rendah</span>' : tersedia === 0 ? '<span class="badge badge-warning">Habis</span>' : '<span class="badge badge-success">OK</span>';
+                return `<tr><td><strong>${item['Kode Barang'] || '-'}</strong></td><td>${item['Nama Barang'] || '-'}</td><td>${item['Lokasi Barang'] || '-'}</td><td><strong>${tersedia}</strong></td><td>${paten}</td><td>${statusBadge}</td></tr>`;
             }).join('');
         }
 
         function filterMasterBarang() {
-            const query = document.getElementById('searchMaster').value.toLowerCase();
+            const search = document.getElementById('searchMaster').value.toLowerCase();
             const filtered = appState.masterBarang.filter(item =>
-                item.kode.toLowerCase().includes(query) || item.nama.toLowerCase().includes(query)
+                (item['Kode Barang'] || '').toLowerCase().includes(search) ||
+                (item['Nama Barang'] || '').toLowerCase().includes(search) ||
+                (item['Lokasi Barang'] || '').toLowerCase().includes(search)
             );
             renderMasterBarang(filtered);
         }
@@ -1097,24 +943,24 @@
         function renderStockGudang(data) {
             document.getElementById('stockCount').textContent = `${data.length} items`;
             const tbody = document.getElementById('stockGudangTable');
-            if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-light);">Tidak ada data</td></tr>';
-                return;
-            }
-            tbody.innerHTML = data.map(item => `<tr>
-                <td>${item['Nama Barang'] || '-'}</td>
-                <td>${item['Spec. Note'] || '-'}</td>
-                <td><strong>${item['Stok'] || 0}</strong></td>
-                <td>${item['Berfungsi'] || 0}</td>
-                <td>${item['Rusak (IT Loc)'] || 0}</td>
-                <td>${item['Rusak (Asset)'] || 0}</td>
-            </tr>`).join('');
+            if (!data || data.length === 0) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Tidak ada data</td></tr>'; return; }
+            tbody.innerHTML = data.map(item => `
+                <tr>
+                    <td><strong>${item['Nama Barang'] || '-'}</strong></td>
+                    <td>${item['Spec. Note'] || '-'}</td>
+                    <td><strong>${item['Stok Barang'] || 0}</strong></td>
+                    <td><span class="badge badge-success">${item['Berfungsi'] || 0}</span></td>
+                    <td><span class="badge badge-warning">${item['Rusak masih di it location'] || 0}</span></td>
+                    <td><span class="badge badge-danger">${item['Rusak sudah kirim asset'] || 0}</span></td>
+                </tr>
+            `).join('');
         }
 
         function filterStockGudang() {
-            const query = document.getElementById('searchStock').value.toLowerCase();
+            const search = document.getElementById('searchStock').value.toLowerCase();
             const filtered = appState.stockGudang.filter(item =>
-                (item['Nama Barang'] || '').toLowerCase().includes(query)
+                (item['Nama Barang'] || '').toLowerCase().includes(search) ||
+                (item['Spec. Note'] || '').toLowerCase().includes(search)
             );
             renderStockGudang(filtered);
         }
@@ -1129,99 +975,182 @@
                 hideLoading();
                 const select = document.getElementById('opnameLokasi');
                 select.innerHTML = '<option value="">-- Pilih Lokasi --</option>';
-                if (lokasiList && lokasiList.length > 0) {
-                    lokasiList.forEach(l => {
-                        select.innerHTML += `<option value="${l}">${l}</option>`;
-                    });
-                }
-                document.getElementById('opnameFilterBar').style.display = 'none';
+                lokasiList.forEach(lok => {
+                    const option = document.createElement('option');
+                    option.value = lok; option.textContent = lok;
+                    select.appendChild(option);
+                });
+                document.getElementById('opnameTableBody').innerHTML = '<tr><td colspan="9" style="text-align:center;">Pilih lokasi terlebih dahulu</td></tr>';
                 document.getElementById('btnExport').disabled = true;
                 document.getElementById('btnSaveOpname').style.display = 'none';
-                document.getElementById('opnameTableBody').innerHTML = '<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--text-light);">Pilih lokasi terlebih dahulu</td></tr>';
+                document.getElementById('opnameAlert').style.display = 'block';
+                document.getElementById('opnameFilterBar').style.display = 'none';
+                appState.opnameData = [];
             } catch (error) {
                 hideLoading();
-                showToast('Gagal memuat data opname', 'error');
+                showToast('Gagal memuat daftar lokasi', 'error');
             }
         }
 
         async function onLokasiChange() {
             const lokasi = document.getElementById('opnameLokasi').value;
             if (!lokasi) {
-                document.getElementById('opnameFilterBar').style.display = 'none';
+                document.getElementById('opnameTableBody').innerHTML = '<tr><td colspan="9" style="text-align:center;">Pilih lokasi terlebih dahulu</td></tr>';
                 document.getElementById('btnExport').disabled = true;
                 document.getElementById('btnSaveOpname').style.display = 'none';
-                document.getElementById('opnameTableBody').innerHTML = '<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--text-light);">Pilih lokasi terlebih dahulu</td></tr>';
+                document.getElementById('opnameAlert').style.display = 'block';
+                document.getElementById('opnameFilterBar').style.display = 'none';
+                appState.opnameData = [];
                 return;
             }
             showLoading();
             try {
                 const data = await callServer('getStockOpname', lokasi);
                 hideLoading();
+                if (!data || data.length === 0) {
+                    document.getElementById('opnameTableBody').innerHTML = '<tr><td colspan="9" style="text-align:center;">Tidak ada barang di lokasi ini</td></tr>';
+                    document.getElementById('btnSaveOpname').style.display = 'none';
+                    document.getElementById('opnameFilterBar').style.display = 'none';
+                    appState.opnameData = [];
+                    return;
+                }
                 appState.opnameData = data;
-                document.getElementById('opnameFilterBar').style.display = 'flex';
                 document.getElementById('btnExport').disabled = false;
                 document.getElementById('btnSaveOpname').style.display = 'inline-flex';
+                document.getElementById('opnameAlert').style.display = 'none';
+                document.getElementById('opnameFilterBar').style.display = 'flex';
                 document.getElementById('opnameFilterStatus').value = 'belum';
-                renderOpnameTable(data, 'belum');
+                applyOpnameFilter();
             } catch (error) {
                 hideLoading();
-                showToast('Gagal memuat data opname', 'error');
+                showToast('Gagal memuat data opname: ' + error, 'error');
             }
-        }
-
-        function renderOpnameTable(data, filter) {
-            let filtered = data;
-            if (filter === 'belum') filtered = data.filter(item => !item['Status Opname'] || item['Status Opname'] === '');
-            else if (filter === 'sudah') filtered = data.filter(item => item['Status Opname'] && item['Status Opname'] !== '');
-
-            const total = data.length;
-            const belum = data.filter(i => !i['Status Opname'] || i['Status Opname'] === '').length;
-            const sudah = total - belum;
-            document.getElementById('opnameSummary').innerHTML = `
-                <span class="sum-item" style="background:rgba(2,119,189,0.1);color:var(--info);">Total: ${total}</span>
-                <span class="sum-item" style="background:rgba(245,127,23,0.1);color:var(--warning);">Belum: ${belum}</span>
-                <span class="sum-item" style="background:rgba(46,125,50,0.1);color:var(--success);">Sudah: ${sudah}</span>
-            `;
-
-            const tbody = document.getElementById('opnameTableBody');
-            if (filtered.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text-light);">Tidak ada data</td></tr>';
-                return;
-            }
-            tbody.innerHTML = filtered.map(item => {
-                const statusOpname = item['Status Opname'] || '';
-                const opnameBadge = statusOpname ? '<span class="badge badge-success">Sudah</span>' : '<span class="badge badge-warning">Belum</span>';
-                const statusFisik = item['Status Fisik'] || '-';
-                return `<tr>
-                    <td>${item.kode || '-'}</td>
-                    <td>${item.nama || '-'}</td>
-                    <td>${item.lokasi || '-'}</td>
-                    <td>${item.tersedia || 0}</td>
-                    <td>${item.rusak || 0}</td>
-                    <td>${item.permanen || 0}</td>
-                    <td>${item.dipinjam || 0}</td>
-                    <td>${statusFisik}</td>
-                    <td>${opnameBadge}</td>
-                </tr>`;
-            }).join('');
         }
 
         function applyOpnameFilter() {
-            const filter = document.getElementById('opnameFilterStatus').value;
-            renderOpnameTable(appState.opnameData, filter);
+            const filterVal = document.getElementById('opnameFilterStatus').value;
+            let filtered;
+            if (filterVal === 'belum') filtered = appState.opnameData.filter(item => !item.isOpnameDone);
+            else if (filterVal === 'sudah') filtered = appState.opnameData.filter(item => item.isOpnameDone);
+            else filtered = appState.opnameData;
+            renderOpnameTable(filtered);
+            updateOpnameSummary();
+        }
+
+        function updateOpnameSummary() {
+            const total = appState.opnameData.length;
+            const sudah = appState.opnameData.filter(i => i.isOpnameDone).length;
+            const belum = total - sudah;
+            document.getElementById('opnameSummary').innerHTML = `
+                <span class="sum-item badge-success" style="background:#e8f5e9;color:#2e7d32;">&#10003; Sudah: ${sudah}</span>
+                <span class="sum-item badge-warning" style="background:#fff8e1;color:#f57f17;">&#9632; Belum: ${belum}</span>
+                <span class="sum-item badge-info" style="background:#e3f2fd;color:#0277bd;">Total: ${total}</span>
+            `;
+        }
+
+        function renderOpnameTable(data) {
+            const tbody = document.getElementById('opnameTableBody');
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color: var(--text-light); padding: 24px;">Tidak ada barang dengan status ini</td></tr>';
+                return;
+            }
+            tbody.innerHTML = data.map(item => {
+                let statusFisik = '<span class="badge badge-success">OK</span>';
+                if (item.outstanding > 0) statusFisik = '<span class="badge badge-warning">Ada Pinjaman</span>';
+                else if (item.tersedia <= 0) statusFisik = '<span class="badge badge-danger">Habis</span>';
+                else if (item.stokPaten > 0 && item.tersedia < item.stokPaten) statusFisik = '<span class="badge badge-danger">Stok Rendah</span>';
+                const selectedBelum = item.isOpnameDone ? '' : 'selected';
+                const selectedSudah = item.isOpnameDone ? 'selected' : '';
+                let dateInfo = item.lastOpnameDate ? `<br><small style="color:#757575">Terakhir: ${item.lastOpnameDate}</small>` : '';
+                return `
+                    <tr data-kode="${item.kode}">
+                        <td><strong>${item.kode}</strong></td>
+                        <td>${item.nama}</td>
+                        <td>${item.lokasi}</td>
+                        <td><strong>${item.tersedia}</strong></td>
+                        <td><span class="badge badge-danger">${item.rusak}</span></td>
+                        <td><span class="badge badge-dark">${item.permanen}</span></td>
+                        <td><span class="badge badge-warning">${item.outstanding}</span></td>
+                        <td>${statusFisik}</td>
+                        <td>
+                            <select class="opname-status-select" data-kode="${item.kode}" style="padding:4px; border-radius:4px; border:1px solid #ccc;">
+                                <option value="Belum" ${selectedBelum}>Belum Teropname</option>
+                                <option value="Sudah" ${selectedSudah}>Sudah Teropname</option>
+                            </select>
+                            ${dateInfo}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
         }
 
         async function saveOpnameStatus() {
-            showToast('Status opname tersimpan', 'success');
+            const lokasi = document.getElementById('opnameLokasi').value;
+            if (!lokasi) { showToast('Pilih lokasi dulu!', 'warning'); return; }
+            const rows = document.querySelectorAll('#opnameTableBody tr');
+            const itemsToUpdate = [];
+            rows.forEach(row => {
+                const kode = row.getAttribute('data-kode');
+                if (kode) {
+                    const select = row.querySelector('.opname-status-select');
+                    if (select && select.value === 'Sudah') itemsToUpdate.push({ kode: kode });
+                }
+            });
+            if (itemsToUpdate.length === 0) { showToast('Tidak ada barang yang dipilih "Sudah Teropname".', 'warning'); return; }
+            if (!confirm(`Anda akan menandai ${itemsToUpdate.length} barang sebagai "Sudah Teropname" per hari ini. Lanjutkan?`)) return;
+            showLoading();
+            try {
+                const result = await callServer('saveStockOpnameStatus', itemsToUpdate);
+                hideLoading();
+                if (result.success) {
+                    showToast(result.message, 'success');
+                    const updatedKodes = new Set(itemsToUpdate.map(i => i.kode));
+                    const today = new Date();
+                    const dateStr = `${today.getDate()}/${today.getMonth()+1}/${today.getFullYear()}`;
+                    appState.opnameData = appState.opnameData.map(item => {
+                        if (updatedKodes.has(item.kode)) return { ...item, isOpnameDone: true, lastOpnameDate: dateStr };
+                        return item;
+                    });
+                    document.getElementById('opnameFilterStatus').value = 'belum';
+                    applyOpnameFilter();
+                } else {
+                    showToast(result.message, 'error');
+                }
+            } catch (error) {
+                hideLoading();
+                showToast('Gagal menyimpan: ' + error, 'error');
+            }
         }
 
-        function exportToExcel() {
-            const table = document.querySelector('#page-stockOpname table');
-            if (!table) return;
-            const wb = XLSX.utils.table_to_book(table, { sheet: 'Stock Opname' });
+        async function exportToExcel() {
             const lokasi = document.getElementById('opnameLokasi').value;
-            XLSX.writeFile(wb, `Stock_Opname_${lokasi}_${new Date().toISOString().split('T')[0]}.xlsx`);
-            showToast('File Excel berhasil diunduh', 'success');
+            if (!lokasi) { showToast('Pilih lokasi dulu!', 'warning'); return; }
+            showLoading();
+            try {
+                const result = await callServer('exportStockOpnameToExcel', lokasi);
+                hideLoading();
+                if (result.success && result.data) {
+                    const worksheet = XLSX.utils.json_to_sheet(result.data, {
+                        header: ['kode', 'nama', 'lokasi', 'tersedia', 'stokPaten', 'rusak', 'permanen', 'outstanding', 'status']
+                    });
+                    const range = XLSX.utils.decode_range(worksheet['!ref']);
+                    for(let C = range.s.c; C <= range.e.c; ++C) {
+                        const address = XLSX.utils.encode_col(C) + "1";
+                        if(!worksheet[address]) continue;
+                        const headers = ['Kode', 'Nama', 'Lokasi', 'Tersedia', 'Paten', 'Rusak', 'Permanen', 'Dipinjam', 'Status'];
+                        worksheet[address].v = headers[C];
+                    }
+                    const workbook = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(workbook, worksheet, "Stock Opname");
+                    XLSX.writeFile(workbook, `StockOpname_${lokasi}.xlsx`);
+                    showToast('File Excel berhasil didownload!', 'success');
+                } else {
+                    showToast(result.message || 'Gagal export', 'error');
+                }
+            } catch (error) {
+                hideLoading();
+                showToast('Gagal export: ' + error, 'error');
+            }
         }
 
         // ============================================
@@ -1236,66 +1165,69 @@
                 renderTransaksi(data);
             } catch (error) {
                 hideLoading();
-                showToast('Gagal memuat riwayat transaksi', 'error');
+                showToast('Gagal memuat transaksi', 'error');
             }
         }
 
         function renderTransaksi(data) {
             document.getElementById('transaksiCount').textContent = `${data.length} transaksi`;
             const tbody = document.getElementById('transaksiTable');
-            if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text-light);">Belum ada transaksi</td></tr>';
-                return;
-            }
-            tbody.innerHTML = data.map(t => `<tr>
-                <td>${formatDate(t['Tanggal'])}</td>
-                <td><strong>${t['Nomor Tiket/PO'] || '-'}</strong></td>
-                <td>${t['Nama Peminjam/Nama PO'] || '-'}</td>
-                <td>${t['Kode Barang'] || '-'}</td>
-                <td>${t['Nama Barang'] || '-'}</td>
-                <td>${t['Qty'] || '-'}</td>
-                <td>${getMutasiBadge(t['Kode Mutasi'])}</td>
-                <td>${t['Keterangan'] || '-'}</td>
-            </tr>`).join('');
+            if (!data || data.length === 0) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Belum ada transaksi</td></tr>'; return; }
+            const reversed = [...data].reverse();
+            tbody.innerHTML = reversed.map(t => `
+                <tr>
+                    <td>${formatDate(t['Tanggal'])}</td>
+                    <td>${t['Nomor Tiket/PO'] || '-'}</td>
+                    <td>${t['Nama Peminjam/Nama PO'] || '-'}</td>
+                    <td><strong>${t['Kode Barang'] || '-'}</strong></td>
+                    <td>${t['Nama Barang'] || '-'}</td>
+                    <td><strong>${t['Qty'] || '-'}</strong></td>
+                    <td>${getMutasiBadge(t['Kode Mutasi'])}</td>
+                    <td>${t['Keterangan'] || '-'}</td>
+                </tr>
+            `).join('');
         }
 
         function filterTransaksi() {
-            const query = document.getElementById('searchTransaksi').value.toLowerCase();
+            const search = document.getElementById('searchTransaksi').value.toLowerCase();
             const filtered = appState.dataEntry.filter(t =>
-                (t['Nomor Tiket/PO'] || '').toLowerCase().includes(query) ||
-                (t['Nama Peminjam/Nama PO'] || '').toLowerCase().includes(query) ||
-                (t['Nama Barang'] || '').toLowerCase().includes(query) ||
-                (t['Kode Barang'] || '').toLowerCase().includes(query)
+                (t['Kode Barang'] || '').toLowerCase().includes(search) ||
+                (t['Nama Barang'] || '').toLowerCase().includes(search) ||
+                (t['Keterangan'] || '').toLowerCase().includes(search) ||
+                (t['Nama Peminjam/Nama PO'] || '').toLowerCase().includes(search)
             );
             renderTransaksi(filtered);
         }
 
         // ============================================
-        // GLOBAL EVENT LISTENERS
+        // HELPERS
         // ============================================
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('.form-group')) {
-                document.querySelectorAll('.sd-dropdown-list').forEach(d => d.classList.remove('show'));
+        function getMutasiBadge(kode) {
+            const n = parseInt(kode);
+            switch (n) {
+                case 1: return '<span class="badge badge-info">Masuk Peminjaman</span>';
+                case 2: return '<span class="badge badge-warning">Keluar</span>';
+                case 3: return '<span class="badge badge-danger">Rusak</span>';
+                case 4: return '<span class="badge badge-danger">Permanen</span>';
+                case 5: return '<span class="badge badge-success">Masuk Baru</span>';
+                default: return '<span class="badge badge-primary">-</span>';
             }
-        });
+        }
 
-        document.addEventListener('click', function(e) {
-            const btn = e.target.closest('.btn');
-            if (!btn || btn.disabled) return;
-            const ripple = document.createElement('span');
-            ripple.style.cssText = 'position:absolute;border-radius:50%;background:rgba(255,255,255,0.35);transform:scale(0);animation:rippleAnim 0.6s ease-out;pointer-events:none;';
-            const rect = btn.getBoundingClientRect();
-            const size = Math.max(rect.width, rect.height);
-            ripple.style.width = ripple.style.height = size + 'px';
-            ripple.style.left = (e.clientX - rect.left - size / 2) + 'px';
-            ripple.style.top = (e.clientY - rect.top - size / 2) + 'px';
-            btn.appendChild(ripple);
-            setTimeout(() => ripple.remove(), 600);
-        });
+        function formatDate(d) { if (!d) return '-'; return d; }
 
-        document.getElementById('loginPassword').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') handleLogin();
-        });
+        function showToast(msg, type) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.className = `toast toast-${type} show`;
+            setTimeout(() => toast.classList.remove('show'), 3500);
+        }
+
+        function showLoading() { document.getElementById('loading').classList.add('active'); }
+        function hideLoading() { document.getElementById('loading').classList.remove('active'); }
+
+        document.getElementById('loginPassword').addEventListener('keypress', e => { if (e.key === 'Enter') handleLogin(); });
+        document.getElementById('loginUsername').addEventListener('keypress', e => { if (e.key === 'Enter') handleLogin(); });
     </script>
 </body>
 </html>
