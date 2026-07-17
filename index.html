@@ -400,7 +400,7 @@
         // ============================================
         // KONFIGURASI
         // ============================================
-        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz3OYcPlo9-1Scq3bdBPE2b4CbCS79NEi6MHANlsdo0kYF7hCPyDO8d_olwdmXKseLlbw/exec';
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzjGmFB1L9EBuMO3BMpNTYCe7T0NLeVUB85PApS5cA17UL2Fg0qDc7bblTcS8CAJm6tXA/exec';
 
         // ============================================
         // APP STATE
@@ -1027,9 +1027,26 @@
             }
             showLoading();
             try {
-                const data = await callServer('getStockOpname', lokasi);
+                let raw = await callServer('getStockOpname', lokasi);
                 hideLoading();
-                if (!data || data.length === 0) {
+                // Handle bentuk response berbeda
+                let data = [];
+                if (Array.isArray(raw)) {
+                    data = raw;
+                } else if (raw && Array.isArray(raw.data)) {
+                    data = raw.data;
+                } else if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+                    // Object tapi bukan array — mungkin error dari server
+                    console.warn('getStockOpname unexpected response:', raw);
+                    showToast(raw.message || 'Response server tidak valid', 'error');
+                    appState.opnameData = [];
+                    return;
+                } else if (typeof raw === 'string') {
+                    showToast('Server error: ' + raw, 'error');
+                    appState.opnameData = [];
+                    return;
+                }
+                if (data.length === 0) {
                     document.getElementById('opnameTableBody').innerHTML = '<tr><td colspan="9" style="text-align:center;">Tidak ada barang di lokasi ini</td></tr>';
                     document.getElementById('btnSaveOpname').style.display = 'none';
                     document.getElementById('opnameFilterBar').style.display = 'none';
@@ -1050,6 +1067,7 @@
         }
 
         function applyOpnameFilter() {
+            if (!Array.isArray(appState.opnameData)) appState.opnameData = [];
             const filterVal = document.getElementById('opnameFilterStatus').value;
             let filtered;
             if (filterVal === 'belum') filtered = appState.opnameData.filter(item => !item.isOpnameDone);
@@ -1060,6 +1078,7 @@
         }
 
         function updateOpnameSummary() {
+            if (!Array.isArray(appState.opnameData)) appState.opnameData = [];
             const total = appState.opnameData.length;
             const sudah = appState.opnameData.filter(i => i.isOpnameDone).length;
             const belum = total - sudah;
@@ -1115,25 +1134,34 @@
                 const kode = row.getAttribute('data-kode');
                 if (kode) {
                     const select = row.querySelector('.opname-status-select');
-                    if (select && select.value === 'Sudah') itemsToUpdate.push({ kode: kode });
+                    if (select) {
+                        itemsToUpdate.push({ kode: kode, status: select.value });
+                    }
                 }
             });
-            if (itemsToUpdate.length === 0) { showToast('Tidak ada barang yang dipilih "Sudah Teropname".', 'warning'); return; }
-            if (!confirm(`Anda akan menandai ${itemsToUpdate.length} barang sebagai "Sudah Teropname" per hari ini. Lanjutkan?`)) return;
+            const sudahCount = itemsToUpdate.filter(i => i.status === 'Sudah').length;
+            const belumCount = itemsToUpdate.filter(i => i.status === 'Belum').length;
+            if (sudahCount === 0 && belumCount === 0) { showToast('Tidak ada perubahan status.', 'warning'); return; }
+            let confirmMsg = '';
+            if (sudahCount > 0) confirmMsg += `${sudahCount} barang → Sudah Teropname`;
+            if (belumCount > 0) confirmMsg += (confirmMsg ? '\n' : '') + `${belumCount} barang → Belum Teropname (dihapus)`;
+            if (!confirm(confirmMsg + '\n\nLanjutkan?')) return;
             showLoading();
             try {
                 const result = await callServer('saveStockOpnameStatus', itemsToUpdate, lokasi);
                 hideLoading();
                 if (result.success) {
                     showToast(result.message, 'success');
-                    const updatedKodes = new Set(itemsToUpdate.map(i => i.kode));
                     const today = new Date();
                     const dateStr = `${today.getDate()}/${today.getMonth()+1}/${today.getFullYear()}`;
                     appState.opnameData = appState.opnameData.map(item => {
-                        if (updatedKodes.has(item.kode)) return { ...item, isOpnameDone: true, lastOpnameDate: dateStr };
+                        const found = itemsToUpdate.find(i => i.kode === item.kode);
+                        if (found) {
+                            if (found.status === 'Sudah') return { ...item, isOpnameDone: true, lastOpnameDate: dateStr };
+                            else return { ...item, isOpnameDone: false, lastOpnameDate: '' };
+                        }
                         return item;
                     });
-                    document.getElementById('opnameFilterStatus').value = 'belum';
                     applyOpnameFilter();
                 } else {
                     showToast(result.message, 'error');
