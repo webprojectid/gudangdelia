@@ -142,7 +142,6 @@
         .opname-summary { display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
         .opname-summary .sum-item { padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
         .menu-toggle { display: none; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--primary); }
-        /* Config banner */
         .config-banner { background: #fff3e0; border: 2px solid var(--accent); border-radius: 8px; padding: 16px 20px; margin-bottom: 20px; font-size: 0.9rem; color: #e65100; display: flex; align-items: center; gap: 12px; }
         .config-banner code { background: rgba(0,0,0,0.08); padding: 2px 8px; border-radius: 4px; font-size: 0.85rem; }
         @media (max-width: 768px) {
@@ -363,7 +362,7 @@
                             <div class="opname-summary" id="opnameSummary"></div>
                         </div>
                         <div id="opnameAlert" class="alert alert-warning" style="display:none;">
-                            <i class="fas fa-info-circle"></i> Pilih lokasi untuk melihat data stock opname.
+                            <i class="fas fa-info-circle"></i> Pilih lokasi terlebih dahulu untuk melihat data stock opname.
                         </div>
                         <div class="table-container" style="max-height: 600px; overflow-y: auto;">
                             <table>
@@ -399,10 +398,9 @@
 
     <script>
         // ============================================
-        // ⚙️  KONFIGURASI — GANTI URL DI BAWAH INI
+        // KONFIGURASI
         // ============================================
-        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxYjttrRRaFjnvevXqofkgwNLIc6bKsJK2C3sfSc_ZWqzdNhlaRltydeYsFkYlUA0cR5A/exec';
-        // ============================================
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzjGmFB1L9EBuMO3BMpNTYCe7T0NLeVUB85PApS5cA17UL2Fg0qDc7bblTcS8CAJm6tXA/exec';
 
         // ============================================
         // APP STATE
@@ -488,6 +486,40 @@
         }
 
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
+
+        // ============================================
+        // HELPERS
+        // ============================================
+        function formatOpdateDate(dateVal) {
+            if (!dateVal) return '';
+            const d = new Date(dateVal);
+            if (isNaN(d.getTime())) return String(dateVal);
+            return `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
+        }
+
+        function getMutasiBadge(kode) {
+            const n = parseInt(kode);
+            switch (n) {
+                case 1: return '<span class="badge badge-info">Masuk Peminjaman</span>';
+                case 2: return '<span class="badge badge-warning">Keluar</span>';
+                case 3: return '<span class="badge badge-danger">Rusak</span>';
+                case 4: return '<span class="badge badge-danger">Permanen</span>';
+                case 5: return '<span class="badge badge-success">Masuk Baru</span>';
+                default: return '<span class="badge badge-primary">-</span>';
+            }
+        }
+
+        function formatDate(d) { if (!d) return '-'; return d; }
+
+        function showToast(msg, type) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.className = `toast toast-${type} show`;
+            setTimeout(() => toast.classList.remove('show'), 3500);
+        }
+
+        function showLoading() { document.getElementById('loading').classList.add('active'); }
+        function hideLoading() { document.getElementById('loading').classList.remove('active'); }
 
         // ============================================
         // DASHBOARD
@@ -628,8 +660,6 @@
             inputs.forEach(el => { if (el.id !== 'searchTicketInput') el.disabled = !enable; });
             document.getElementById('btnSubmit').disabled = !enable;
             document.getElementById('btnAddItem').disabled = !enable;
-            
-            // Update status input di dalam item rows
             Object.keys(appState.itemData).forEach(itemId => {
                 const searchInput = document.getElementById(`search_${itemId}`);
                 const qtyInput = document.getElementById(`qty_${itemId}`);
@@ -697,14 +727,12 @@
             appState.itemCounter = 0;
             appState.itemData = {};
             document.getElementById('itemsContainer').innerHTML = '';
-            
             if (!appState.isEditMode) {
                 toggleFormInputs(true);
                 document.getElementById('btnSubmitText').textContent = 'Simpan Transaksi';
             } else {
                 toggleFormInputs(false);
             }
-            
             addItemRow();
         }
 
@@ -717,7 +745,6 @@
             appState.itemData[itemId] = { kodeBarang: '', namaBarang: '', qty: 1, tersedia: 0, stokPaten: 0, _rowIndex: null };
             const container = document.getElementById('itemsContainer');
             const itemNumber = Object.keys(appState.itemData).length;
-            
             const row = document.createElement('div');
             row.className = 'item-row';
             row.id = `row_${itemId}`;
@@ -759,18 +786,13 @@
             `;
             container.appendChild(row);
             updateItemCount();
-            
-            // Atur status disabled berdasarkan mode saat ini
             const searchInput = document.getElementById(`search_${itemId}`);
             const qtyInput = document.getElementById(`qty_${itemId}`);
-            
             if (!appState.isEditMode) {
-                // Mode Entry Baru: Enable
                 if (searchInput) searchInput.disabled = false;
                 if (qtyInput) qtyInput.disabled = false;
                 setTimeout(() => { if(searchInput) searchInput.focus(); }, 100);
             } else {
-                // Mode Edit (tapi belum klik tombol Edit): Disable
                 if (searchInput) searchInput.disabled = true;
                 if (qtyInput) qtyInput.disabled = true;
             }
@@ -1048,61 +1070,41 @@
             `;
         }
 
-        function formatOpnameDate(dateStr) {
-    if (!dateStr) return '';
-    // Jika formatnya ISO String (ada huruf T)
-    if (typeof dateStr === 'string' && dateStr.includes('T')) {
-        const d = new Date(dateStr);
-        if (!isNaN(d.getTime())) {
-            const day = String(d.getDate()).padStart(2, '0');
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            const year = d.getFullYear();
-            return `${day}/${month}/${year}`;
+        function renderOpnameTable(data) {
+            const tbody = document.getElementById('opnameTableBody');
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color: var(--text-light); padding: 24px;">Tidak ada barang dengan status ini</td></tr>';
+                return;
+            }
+            tbody.innerHTML = data.map(item => {
+                let statusFisik = '<span class="badge badge-success">OK</span>';
+                if (item.outstanding > 0) statusFisik = '<span class="badge badge-warning">Ada Pinjaman</span>';
+                else if (item.tersedia <= 0) statusFisik = '<span class="badge badge-danger">Habis</span>';
+                else if (item.stokPaten > 0 && item.tersedia < item.stokPaten) statusFisik = '<span class="badge badge-danger">Stok Rendah</span>';
+                const selectedBelum = item.isOpnameDone ? '' : 'selected';
+                const selectedSudah = item.isOpnameDone ? 'selected' : '';
+                let dateInfo = item.lastOpnameDate ? `<br><small style="color:#757575">Terakhir: ${formatOpdateDate(item.lastOpnameDate)}</small>` : '';
+                return `
+                    <tr data-kode="${item.kode}">
+                        <td><strong>${item.kode}</strong></td>
+                        <td>${item.nama}</td>
+                        <td>${item.lokasi}</td>
+                        <td><strong>${item.tersedia}</strong></td>
+                        <td><span class="badge badge-danger">${item.rusak}</span></td>
+                        <td><span class="badge badge-dark">${item.permanen}</span></td>
+                        <td><span class="badge badge-warning">${item.outstanding}</span></td>
+                        <td>${statusFisik}</td>
+                        <td>
+                            <select class="opname-status-select" data-kode="${item.kode}" style="padding:4px; border-radius:4px; border:1px solid #ccc;">
+                                <option value="Belum" ${selectedBelum}>Belum Teropname</option>
+                                <option value="Sudah" ${selectedSudah}>Sudah Teropname</option>
+                            </select>
+                            ${dateInfo}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
         }
-    }
-    return dateStr;
-}
-
-function renderOpnameTable(data) {
-    const tbody = document.getElementById('opnameTableBody');
-    if (!data || data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color: var(--text-light); padding: 24px;">Tidak ada barang dengan status ini</td></tr>';
-        return;
-    }
-    tbody.innerHTML = data.map(item => {
-        let statusFisik = '<span class="badge badge-success">OK</span>';
-        if (item.outstanding > 0) statusFisik = '<span class="badge badge-warning">Ada Pinjaman</span>';
-        else if (item.tersedia <= 0) statusFisik = '<span class="badge badge-danger">Habis</span>';
-        else if (item.stokPaten > 0 && item.tersedia < item.stokPaten) statusFisik = '<span class="badge badge-danger">Stok Rendah</span>';
-        
-        const selectedBelum = item.isOpnameDone ? '' : 'selected';
-        const selectedSudah = item.isOpnameDone ? 'selected' : '';
-        
-        // --- PERBAIKAN FORMAT TANGGAL DI SINI ---
-        const formattedDate = formatOpnameDate(item.lastOpnameDate);
-        let dateInfo = formattedDate ? `<br><small style="color:#757575">Terakhir: ${formattedDate}</small>` : '';
-        
-        return `
-            <tr data-kode="${item.kode}">
-                <td><strong>${item.kode}</strong></td>
-                <td>${item.nama}</td>
-                <td>${item.lokasi}</td>
-                <td><strong>${item.tersedia}</strong></td>
-                <td><span class="badge badge-danger">${item.rusak}</span></td>
-                <td><span class="badge badge-dark">${item.permanen}</span></td>
-                <td><span class="badge badge-warning">${item.outstanding}</span></td>
-                <td>${statusFisik}</td>
-                <td>
-                    <select class="opname-status-select" data-kode="${item.kode}" style="padding:4px; border-radius:4px; border:1px solid #ccc;">
-                        <option value="Belum" ${selectedBelum}>Belum Teropname</option>
-                        <option value="Sudah" ${selectedSudah}>Sudah Teropname</option>
-                    </select>
-                    ${dateInfo}
-                </td>
-            </tr>
-        `;
-    }).join('');
-}
 
         async function saveOpnameStatus() {
             const lokasi = document.getElementById('opnameLokasi').value;
@@ -1120,7 +1122,7 @@ function renderOpnameTable(data) {
             if (!confirm(`Anda akan menandai ${itemsToUpdate.length} barang sebagai "Sudah Teropname" per hari ini. Lanjutkan?`)) return;
             showLoading();
             try {
-                const result = await callServer('saveStockOpnameStatus', itemsToUpdate);
+                const result = await callServer('saveStockOpnameStatus', itemsToUpdate, lokasi);
                 hideLoading();
                 if (result.success) {
                     showToast(result.message, 'success');
@@ -1218,33 +1220,6 @@ function renderOpnameTable(data) {
             );
             renderTransaksi(filtered);
         }
-
-        // ============================================
-        // HELPERS
-        // ============================================
-        function getMutasiBadge(kode) {
-            const n = parseInt(kode);
-            switch (n) {
-                case 1: return '<span class="badge badge-info">Masuk Peminjaman</span>';
-                case 2: return '<span class="badge badge-warning">Keluar</span>';
-                case 3: return '<span class="badge badge-danger">Rusak</span>';
-                case 4: return '<span class="badge badge-danger">Permanen</span>';
-                case 5: return '<span class="badge badge-success">Masuk Baru</span>';
-                default: return '<span class="badge badge-primary">-</span>';
-            }
-        }
-
-        function formatDate(d) { if (!d) return '-'; return d; }
-
-        function showToast(msg, type) {
-            const toast = document.getElementById('toast');
-            toast.textContent = msg;
-            toast.className = `toast toast-${type} show`;
-            setTimeout(() => toast.classList.remove('show'), 3500);
-        }
-
-        function showLoading() { document.getElementById('loading').classList.add('active'); }
-        function hideLoading() { document.getElementById('loading').classList.remove('active'); }
 
         document.getElementById('loginPassword').addEventListener('keypress', e => { if (e.key === 'Enter') handleLogin(); });
         document.getElementById('loginUsername').addEventListener('keypress', e => { if (e.key === 'Enter') handleLogin(); });
