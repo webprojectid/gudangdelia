@@ -1048,41 +1048,61 @@
             `;
         }
 
-        function renderOpnameTable(data) {
-            const tbody = document.getElementById('opnameTableBody');
-            if (!data || data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color: var(--text-light); padding: 24px;">Tidak ada barang dengan status ini</td></tr>';
-                return;
-            }
-            tbody.innerHTML = data.map(item => {
-                let statusFisik = '<span class="badge badge-success">OK</span>';
-                if (item.outstanding > 0) statusFisik = '<span class="badge badge-warning">Ada Pinjaman</span>';
-                else if (item.tersedia <= 0) statusFisik = '<span class="badge badge-danger">Habis</span>';
-                else if (item.stokPaten > 0 && item.tersedia < item.stokPaten) statusFisik = '<span class="badge badge-danger">Stok Rendah</span>';
-                const selectedBelum = item.isOpnameDone ? '' : 'selected';
-                const selectedSudah = item.isOpnameDone ? 'selected' : '';
-                let dateInfo = item.lastOpnameDate ? `<br><small style="color:#757575">Terakhir: ${item.lastOpnameDate}</small>` : '';
-                return `
-                    <tr data-kode="${item.kode}">
-                        <td><strong>${item.kode}</strong></td>
-                        <td>${item.nama}</td>
-                        <td>${item.lokasi}</td>
-                        <td><strong>${item.tersedia}</strong></td>
-                        <td><span class="badge badge-danger">${item.rusak}</span></td>
-                        <td><span class="badge badge-dark">${item.permanen}</span></td>
-                        <td><span class="badge badge-warning">${item.outstanding}</span></td>
-                        <td>${statusFisik}</td>
-                        <td>
-                            <select class="opname-status-select" data-kode="${item.kode}" style="padding:4px; border-radius:4px; border:1px solid #ccc;">
-                                <option value="Belum" ${selectedBelum}>Belum Teropname</option>
-                                <option value="Sudah" ${selectedSudah}>Sudah Teropname</option>
-                            </select>
-                            ${dateInfo}
-                        </td>
-                    </tr>
-                `;
-            }).join('');
+        function formatOpnameDate(dateStr) {
+    if (!dateStr) return '';
+    // Jika formatnya ISO String (ada huruf T)
+    if (typeof dateStr === 'string' && dateStr.includes('T')) {
+        const d = new Date(dateStr);
+        if (!isNaN(d.getTime())) {
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const year = d.getFullYear();
+            return `${day}/${month}/${year}`;
         }
+    }
+    return dateStr;
+}
+
+function renderOpnameTable(data) {
+    const tbody = document.getElementById('opnameTableBody');
+    if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color: var(--text-light); padding: 24px;">Tidak ada barang dengan status ini</td></tr>';
+        return;
+    }
+    tbody.innerHTML = data.map(item => {
+        let statusFisik = '<span class="badge badge-success">OK</span>';
+        if (item.outstanding > 0) statusFisik = '<span class="badge badge-warning">Ada Pinjaman</span>';
+        else if (item.tersedia <= 0) statusFisik = '<span class="badge badge-danger">Habis</span>';
+        else if (item.stokPaten > 0 && item.tersedia < item.stokPaten) statusFisik = '<span class="badge badge-danger">Stok Rendah</span>';
+        
+        const selectedBelum = item.isOpnameDone ? '' : 'selected';
+        const selectedSudah = item.isOpnameDone ? 'selected' : '';
+        
+        // --- PERBAIKAN FORMAT TANGGAL DI SINI ---
+        const formattedDate = formatOpnameDate(item.lastOpnameDate);
+        let dateInfo = formattedDate ? `<br><small style="color:#757575">Terakhir: ${formattedDate}</small>` : '';
+        
+        return `
+            <tr data-kode="${item.kode}">
+                <td><strong>${item.kode}</strong></td>
+                <td>${item.nama}</td>
+                <td>${item.lokasi}</td>
+                <td><strong>${item.tersedia}</strong></td>
+                <td><span class="badge badge-danger">${item.rusak}</span></td>
+                <td><span class="badge badge-dark">${item.permanen}</span></td>
+                <td><span class="badge badge-warning">${item.outstanding}</span></td>
+                <td>${statusFisik}</td>
+                <td>
+                    <select class="opname-status-select" data-kode="${item.kode}" style="padding:4px; border-radius:4px; border:1px solid #ccc;">
+                        <option value="Belum" ${selectedBelum}>Belum Teropname</option>
+                        <option value="Sudah" ${selectedSudah}>Sudah Teropname</option>
+                    </select>
+                    ${dateInfo}
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
 
         async function saveOpnameStatus() {
             const lokasi = document.getElementById('opnameLokasi').value;
