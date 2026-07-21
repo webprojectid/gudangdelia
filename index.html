@@ -1066,7 +1066,44 @@
 
             <!-- MASTER BARANG PAGE -->
             <div class="page" id="page-masterBarang">
-                <div class="glass-card animate-in">
+                <div class="glass-card animate-in" style="margin-bottom:24px;">
+                    <div class="card-header-flex">
+                        <h2 class="card-title"><i class="fas fa-plus-circle" style="color:var(--success);"></i> Tambah Master Barang</h2>
+                        <button class="btn btn-ghost btn-sm" onclick="toggleAddMasterForm()" id="btnToggleAddMaster"><i class="fas fa-chevron-down"></i> Buka Form</button>
+                    </div>
+                    <div id="addMasterForm" style="display:none;">
+                        <div class="form-grid" style="margin-bottom:16px;">
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label>Nama Barang</label>
+                                <input type="text" id="inputMasterNama" placeholder="Contoh: Kabel HDMI 10M" oninput="previewMasterKode()">
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label>Kode Barang (Otomatis)</label>
+                                <input type="text" id="inputMasterKode" readonly disabled style="font-family:var(--font-mono); color:var(--primary-light);">
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label>Lokasi</label>
+                                <select id="inputMasterLokasi">
+                                    <option value="">-- Pilih Lokasi --</option>
+                                    <option value="Gudang Lantai 10">Gudang Lantai 10</option>
+                                    <option value="Gudang Lantai 4">Gudang Lantai 4</option>
+                                    <option value="Ruang IT Lantai 4 (C0402)">Ruang IT Lantai 4 (C0402)</option>
+                                    <option value="Ruang IT Mall Alsut">Ruang IT Mall Alsut</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label>Stok Paten (Minimum)</label>
+                                <input type="number" id="inputMasterPaten" min="0" value="0" placeholder="0">
+                            </div>
+                        </div>
+                        <div style="display:flex; gap:12px;">
+                            <button class="btn btn-success btn-sm" onclick="submitAddMaster()"><i class="fas fa-plus"></i> Tambah Barang</button>
+                            <button class="btn btn-ghost btn-sm" onclick="resetAddMasterForm()"><i class="fas fa-redo"></i> Reset</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card animate-in delay-1">
                     <div class="card-header-flex">
                         <h2 class="card-title"><i class="fas fa-box"></i> Master Barang</h2>
                         <span class="badge badge-primary badge-pill" id="masterCount">0 items</span>
@@ -2129,6 +2166,91 @@
             const search = document.getElementById('searchMaster').value.toLowerCase();
             const filtered = appState.masterBarang.filter(item => (item.kode_barang || '').toLowerCase().includes(search) || (item.nama_barang || '').toLowerCase().includes(search) || (item.lokasi_barang || '').toLowerCase().includes(search));
             renderMasterBarang(filtered);
+        }
+
+        // ============================================
+        // ADD MASTER BARANG
+        // ============================================
+        function toggleAddMasterForm() {
+            const form = document.getElementById('addMasterForm');
+            const btn = document.getElementById('btnToggleAddMaster');
+            const isOpen = form.style.display !== 'none';
+            form.style.display = isOpen ? 'none' : 'block';
+            btn.innerHTML = isOpen ? '<i class="fas fa-chevron-down"></i> Buka Form' : '<i class="fas fa-chevron-up"></i> Tutup Form';
+        }
+
+        function generateMasterKode(namaBarang) {
+            if (!namaBarang) return '';
+            // Ambil kata pertama, bersihkan
+            let prefix = namaBarang.split(/[\s\-\/]/)[0].replace(/[^a-zA-Z]/g, '');
+            if (!prefix) prefix = 'BRG';
+            prefix = prefix.charAt(0).toUpperCase() + prefix.slice(1).toLowerCase();
+            // Cari kode tertinggi yang ada
+            const existing = appState.masterBarang
+                .map(i => i.kode_barang)
+                .filter(k => k && k.startsWith(prefix + '-'))
+                .map(k => parseInt(k.split('-')[1]) || 0);
+            const nextNum = existing.length > 0 ? Math.max(...existing) + 1 : 1;
+            return `${prefix}-${nextNum}`;
+        }
+
+        function previewMasterKode() {
+            const nama = document.getElementById('inputMasterNama').value.trim();
+            const kode = generateMasterKode(nama);
+            document.getElementById('inputMasterKode').value = kode;
+        }
+
+        function resetAddMasterForm() {
+            document.getElementById('inputMasterNama').value = '';
+            document.getElementById('inputMasterKode').value = '';
+            document.getElementById('inputMasterLokasi').value = '';
+            document.getElementById('inputMasterPaten').value = '0';
+        }
+
+        async function submitAddMaster() {
+            const nama = document.getElementById('inputMasterNama').value.trim();
+            const kode = document.getElementById('inputMasterKode').value.trim();
+            const lokasi = document.getElementById('inputMasterLokasi').value;
+            const paten = parseInt(document.getElementById('inputMasterPaten').value) || 0;
+
+            if (!nama) { showToast('Isi nama barang!', 'warning'); return; }
+            if (!lokasi) { showToast('Pilih lokasi!', 'warning'); return; }
+            if (!kode) { showToast('Kode barang otomatis gagal dibuat', 'error'); return; }
+
+            // Check duplicate
+            const dup = appState.masterBarang.find(i => i.kode_barang === kode);
+            if (dup) { showToast('Kode ' + kode + ' sudah ada!', 'error'); return; }
+
+            if (!(await showCustomConfirm('Tambah Barang', `Tambah <b>${nama}</b> dengan kode <b>${kode}</b> di <b>${lokasi}</b>?`))) return;
+
+            showLoading();
+            try {
+                await sbInsert('master_barang', [{
+                    kode_barang: kode,
+                    nama_barang: nama,
+                    serial_number: '',
+                    fa_number: '',
+                    lokasi_barang: lokasi,
+                    hasil_kalibrasi: 0,
+                    masuk_peminjaman: 0,
+                    masuk_baru: 0,
+                    keluar_peminjaman: 0,
+                    rusak: 0,
+                    permanen: 0,
+                    tersedia: 0,
+                    stok_paten: paten,
+                    last_opname_date: '',
+                    barcode: nama
+                }]);
+                await writeLog('Master Barang', 'Tambah Barang', kode, '0', '0', nama, 'Lokasi: ' + lokasi + ' | Paten: ' + paten);
+                hideLoading();
+                showToast(`${nama} berhasil ditambahkan!`, 'success');
+                resetAddMasterForm();
+                loadMasterBarang();
+            } catch (error) {
+                hideLoading();
+                showToast('Gagal menambah barang: ' + error, 'error');
+            }
         }
 
         // ============================================
