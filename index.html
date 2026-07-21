@@ -2294,8 +2294,8 @@
             const resultEl = document.getElementById('scanResult');
             const scanToast = document.getElementById('scanToast');
 
-            // Cari barang di opnameData berdasarkan kode
-            const item = appState.opnameData.find(i => i.kode === kode);
+            // Cari barang di opnameData berdasarkan barcode (nama barang) atau kode
+            const item = appState.opnameData.find(i => i.kode === kode || i.nama === kode);
             if (!item) {
                 resultEl.innerHTML = '<span style="color:var(--danger);"><i class="fas fa-times-circle"></i> Kode <b>' + kode + '</b> tidak ditemukan di lokasi ini.</span>';
                 showScanToast('Barang tidak ditemukan!', 'danger');
@@ -2303,7 +2303,7 @@
             }
 
             // Toggle status opname
-            const row = document.querySelector(`#opnameTableBody tr[data-kode="${kode}"]`);
+            const row = document.querySelector(`#opnameTableBody tr[data-kode="${item.kode}"]`);
             if (row) {
                 const select = row.querySelector('.opname-status-select');
                 if (select) {
@@ -2399,8 +2399,8 @@
             const kode = decodedText.trim();
             const resultEl = document.getElementById('scanResult');
 
-            // Cari barang di namaBarangList berdasarkan kode
-            const item = appState.namaBarangList.find(m => m.kode === kode);
+            // Cari barang di namaBarangList berdasarkan barcode (nama) atau kode
+            const item = appState.namaBarangList.find(m => m.kode === kode || m.nama === kode);
             if (!item) {
                 resultEl.innerHTML = '<span style="color:var(--danger);"><i class="fas fa-times-circle"></i> Kode <b>' + kode + '</b> tidak ditemukan.</span>';
                 showScanToast('Barang tidak ditemukan!', 'danger');
