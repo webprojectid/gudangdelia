@@ -1049,8 +1049,11 @@
                             </div>
                             
                             <div id="itemsContainer"></div>
-                            
-                            <button type="button" class="btn-add-item" id="btnAddItem" onclick="addItemRow()" disabled><i class="fas fa-plus"></i> Tambah Barang Lain</button>
+
+                            <div style="display:flex; gap:12px; margin-top:12px;">
+                                <button type="button" class="btn-add-item" id="btnAddItem" onclick="addItemRow()" disabled style="flex:1;"><i class="fas fa-plus"></i> Tambah Barang Lain</button>
+                                <button type="button" class="btn btn-primary btn-sm" id="btnScanDataEntry" onclick="startDataEntryScan()" disabled style="white-space:nowrap;"><i class="fas fa-camera"></i> Scan Barcode</button>
+                            </div>
                         </div>
                         
                         <div style="margin-top: var(--space-8); display: flex; gap: var(--space-3); flex-wrap: wrap;">
@@ -1129,13 +1132,17 @@
                     </div>
                     
                     <div id="opnameFilterBar" style="display:none; margin-bottom: var(--space-4); justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
-                        <div style="display: flex; align-items: center; gap: 8px;">
+                        <div style="display: flex; align-items: center; gap: 12px; flex-wrap:wrap;">
                             <span class="text-label"><i class="fas fa-filter"></i> Filter:</span>
                             <select id="opnameFilterStatus" onchange="applyOpnameFilter()" style="padding: 6px 12px; border-radius: var(--radius-full); background: var(--surface-2); border: 1px solid var(--border-default); color: var(--text-primary); font-size:12px; outline:none;">
                                 <option value="belum">Belum Teropname</option>
                                 <option value="sudah">Sudah Teropname</option>
                                 <option value="semua">Semua Barang</option>
                             </select>
+                            <div style="position:relative;">
+                                <i class="fas fa-search" style="position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:12px;"></i>
+                                <input type="text" id="searchOpnameItem" placeholder="Cari barang..." oninput="filterOpnameBySearch()" style="padding:6px 12px 6px 30px; border-radius:var(--radius-full); background:var(--surface-2); border:1px solid var(--border-default); color:var(--text-primary); font-size:12px; outline:none; width:180px;">
+                            </div>
                         </div>
                         <div id="opnameSummary" style="display:flex; gap:8px;"></div>
                     </div>
@@ -1861,7 +1868,7 @@
         function toggleFormInputs(enable) {
             const inputs = document.querySelectorAll('#entryForm input, #entryForm select, #entryForm textarea');
             inputs.forEach(el => { if (el.id !== 'searchTicketInput') el.disabled = !enable; });
-            document.getElementById('btnSubmit').disabled = !enable; document.getElementById('btnAddItem').disabled = !enable;
+            document.getElementById('btnSubmit').disabled = !enable; document.getElementById('btnAddItem').disabled = !enable; document.getElementById('btnScanDataEntry').disabled = !enable;
             Object.keys(appState.itemData).forEach(itemId => {
                 const searchInput = document.getElementById(`search_${itemId}`); const qtyInput = document.getElementById(`qty_${itemId}`);
                 if (searchInput) searchInput.disabled = !enable; if (qtyInput) qtyInput.disabled = !enable;
@@ -2008,12 +2015,7 @@
                 <div class="item-row-grid">
                     <div class="form-group" style="margin-bottom:0; position:relative;">
                         <label>Nama Barang</label>
-                        <div style="display:flex; gap:8px; align-items:center;">
-                            <input type="text" id="search_${itemId}" placeholder="Ketik untuk mencari..." oninput="onItemSearch('${itemId}')" autocomplete="off" style="flex:1;">
-                            <button type="button" class="btn-icon-ghost" onclick="scanItemBarcode('${itemId}')" title="Scan Barcode" style="background:var(--primary); color:white; width:36px; height:36px; border-radius:var(--radius-sm); flex-shrink:0; border:none; cursor:pointer;">
-                                <i class="fas fa-camera" style="font-size:14px;"></i>
-                            </button>
-                        </div>
+                        <input type="text" id="search_${itemId}" placeholder="Ketik untuk mencari..." oninput="onItemSearch('${itemId}')" autocomplete="off">
                         <div class="sd-dropdown-list" id="dropdown_${itemId}"></div>
                     </div>
                     <div class="form-group" style="margin-bottom:0;"><label>Qty</label><input type="number" id="qty_${itemId}" min="1" value="1" oninput="onItemQtyChange('${itemId}')"></div>
@@ -2187,18 +2189,29 @@
                     if (isOpnameDone) { const dateMatch = opnameVal.match(/(\d{1,2}\/\d{1,2}\/\d{4})/); lastOpnameDate = dateMatch ? dateMatch[1] : opnameVal; }
                     return { kode: item.kode_barang, nama: item.nama_barang, lokasi: item.lokasi_barang, tersedia: parseInt(item.tersedia) || 0, stokPaten: parseInt(item.stok_paten) || 0, rusak: parseInt(item.rusak) || 0, permanen: parseInt(item.permanen) || 0, outstanding, isOpnameDone, lastOpnameDate };
                 });
-                document.getElementById('btnExport').disabled = false; document.getElementById('btnSaveOpname').style.display = 'inline-flex'; document.getElementById('opnameAlert').style.display = 'none'; document.getElementById('opnameFilterBar').style.display = 'flex'; document.getElementById('opnameFilterStatus').value = 'belum'; document.getElementById('btnScanBarcode').disabled = false; applyOpnameFilter();
+                document.getElementById('btnExport').disabled = false; document.getElementById('btnSaveOpname').style.display = 'inline-flex'; document.getElementById('opnameAlert').style.display = 'none'; document.getElementById('opnameFilterBar').style.display = 'flex'; document.getElementById('opnameFilterStatus').value = 'belum'; document.getElementById('btnScanBarcode').disabled = false; document.getElementById('searchOpnameItem').value = ''; applyOpnameFilter();
             } catch (error) { hideLoading(); showToast('Gagal memuat data opname', 'error'); }
         }
 
         function applyOpnameFilter() {
             if (!Array.isArray(appState.opnameData)) appState.opnameData = [];
             const filterVal = document.getElementById('opnameFilterStatus').value;
+            const searchText = (document.getElementById('searchOpnameItem')?.value || '').toLowerCase().trim();
             let filtered;
             if (filterVal === 'belum') filtered = appState.opnameData.filter(item => !item.isOpnameDone);
             else if (filterVal === 'sudah') filtered = appState.opnameData.filter(item => item.isOpnameDone);
-            else filtered = appState.opnameData;
+            else filtered = [...appState.opnameData];
+            if (searchText) {
+                filtered = filtered.filter(item =>
+                    (item.kode || '').toLowerCase().includes(searchText) ||
+                    (item.nama || '').toLowerCase().includes(searchText)
+                );
+            }
             renderOpnameTable(filtered); updateOpnameSummary();
+        }
+
+        function filterOpnameBySearch() {
+            applyOpnameFilter();
         }
 
         function updateOpnameSummary() {
@@ -2369,15 +2382,12 @@
         }
 
         // ============================================
-        // BARCODE SCAN FOR DATA ENTRY (per item)
+        // BARCODE SCAN FOR DATA ENTRY (CONTINUOUS)
         // ============================================
-        let scanTargetItemId = null;
-
-        function scanItemBarcode(itemId) {
+        function startDataEntryScan() {
             if (appState.isEditMode) return;
-            scanTargetItemId = itemId;
             document.getElementById('scanModal').style.display = 'flex';
-            document.getElementById('scanResult').textContent = 'Memulai kamera...';
+            document.getElementById('scanResult').textContent = 'Memulai kamera... Arahkan ke QR code barang.';
             document.querySelector('#scanModal h3').innerHTML = '<i class="fas fa-camera" style="color:var(--primary);"></i> Scan Barcode Barang';
 
             html5QrCode = new Html5Qrcode("scanReader");
@@ -2402,23 +2412,27 @@
             // Cari barang di namaBarangList berdasarkan barcode (nama) atau kode
             const item = appState.namaBarangList.find(m => m.kode === kode || m.nama === kode);
             if (!item) {
-                resultEl.innerHTML = '<span style="color:var(--danger);"><i class="fas fa-times-circle"></i> Kode <b>' + kode + '</b> tidak ditemukan.</span>';
+                resultEl.innerHTML = '<span style="color:var(--danger);"><i class="fas fa-times-circle"></i> <b>' + kode + '</b> tidak ditemukan.</span>';
                 showScanToast('Barang tidak ditemukan!', 'danger');
                 return;
             }
 
-            // Auto-fill item row
-            if (scanTargetItemId) {
-                selectItemForInput(scanTargetItemId, item);
-                const qtyInput = document.getElementById(`qty_${scanTargetItemId}`);
-                if (qtyInput) qtyInput.focus();
+            // Auto-add new item row
+            addItemRow();
+            const allItemIds = Object.keys(appState.itemData);
+            const lastItemId = allItemIds[allItemIds.length - 1];
 
-                resultEl.innerHTML = `<span style="color:var(--success);"><i class="fas fa-check-circle"></i> <b>${item.nama}</b> (${item.kode}) berhasil dipilih.</span>`;
-                showScanToast(`${item.nama} dipilih!`, 'success');
-            }
+            // Fill the new row with scanned item
+            selectItemForInput(lastItemId, item);
 
-            // Close scanner after success
-            setTimeout(() => { stopBarcodeScan(); }, 800);
+            resultEl.innerHTML = `<span style="color:var(--success);"><i class="fas fa-check-circle"></i> <b>${item.nama}</b> (${item.kode}) ditambahkan. Scan barang berikutnya...</span>`;
+            showScanToast(`+ ${item.nama}`, 'success');
+
+            // Scroll to the new item
+            const row = document.getElementById(`row_${lastItemId}`);
+            if (row) row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            // Scanner stays open for next scan
         }
 
         async function exportToExcel() {
